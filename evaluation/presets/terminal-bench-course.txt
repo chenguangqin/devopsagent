@@ -1,0 +1,14 @@
+# Terminal-Bench 2.0 sample tasks selected for the workshop.
+#
+# Progressive capability coverage:
+# 1. structured data processing and exact artifact generation
+# 2. compilation and build verification
+# 3. persistent service and system configuration
+# 4. repository diagnosis, security reasoning, code repair, and tests
+# 5. cross-language implementation under unusual constraints
+
+log-summary-date-ranges
+sqlite-with-gcov
+configure-git-webserver
+fix-code-vulnerability
+polyglot-c-py

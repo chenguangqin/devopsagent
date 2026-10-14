@@ -135,6 +135,37 @@ uv run python -m evaluation.run_matrix \
 结果保存在 `evaluation/jobs/<timestamp>/`，其中每个 engine 有独立的 Harbor Job，
 总表写入 `matrix-summary.json`。
 
+### Terminal-Bench 正式任务子集
+
+课程首轮建议从 `terminal-bench-sample@2.0` 中选择以下五个任务：
+
+| 任务 | 主要能力 |
+|---|---|
+| `log-summary-date-ranges` | 日志探索、边界日期、精确 CSV |
+| `sqlite-with-gcov` | 源码构建、编译参数、PATH、验证 |
+| `configure-git-webserver` | Git hook、Web 服务、后台进程 |
+| `fix-code-vulnerability` | 代码诊断、CWE、修复、测试 |
+| `polyglot-c-py` | 复杂约束下的跨语言实现 |
+
+先只运行 native Agent，确认任务镜像、权限和超时配置：
+
+```bash
+uv run devopsagent-eval \
+  --dataset terminal-bench-sample@2.0 \
+  --engines native \
+  --include-task log-summary-date-ranges \
+  --include-task sqlite-with-gcov \
+  --include-task configure-git-webserver \
+  --include-task fix-code-vulnerability \
+  --include-task polyglot-c-py \
+  --max-steps 30 \
+  --tool-timeout-seconds 300 \
+  --n-concurrent 1
+```
+
+基础设施跑通后，移除 `--engines native` 即可用三个 Agent 跑同一任务集。任务清单也
+保存在 `evaluation/presets/terminal-bench-course.txt`。
+
 ## CLI 工具协议
 
 协议为逐行 JSON，stdout 只承载协议消息，日志写 stderr。

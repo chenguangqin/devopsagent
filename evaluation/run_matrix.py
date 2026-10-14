@@ -35,6 +35,20 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--attempts", type=int, default=1)
     parser.add_argument("--n-concurrent", type=int, default=1)
     parser.add_argument("--environment", default="docker")
+    parser.add_argument(
+        "--include-task",
+        action="append",
+        default=[],
+        help="Task name or glob to include; repeat for multiple selections.",
+    )
+    parser.add_argument(
+        "--exclude-task",
+        action="append",
+        default=[],
+        help="Task name or glob to exclude; repeat for multiple selections.",
+    )
+    parser.add_argument("--tool-timeout-seconds", type=int, default=120)
+    parser.add_argument("--max-tool-output-chars", type=int, default=50_000)
     parser.add_argument("--output-dir", type=Path, default=Path("evaluation/jobs"))
     return parser
 
@@ -64,6 +78,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             f"max_steps={args.max_steps}",
             "--ak",
             f"max_tokens={args.max_tokens}",
+            "--ak",
+            f"tool_timeout_seconds={args.tool_timeout_seconds}",
+            "--ak",
+            f"max_tool_output_chars={args.max_tool_output_chars}",
             "--n-attempts",
             str(args.attempts),
             "--n-concurrent",
@@ -76,6 +94,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             command.extend(["--path", str(args.path)])
         else:
             command.extend(["--dataset", args.dataset])
+        for task_name in args.include_task:
+            command.extend(["--include-task-name", task_name])
+        for task_name in args.exclude_task:
+            command.extend(["--exclude-task-name", task_name])
 
         print(f"\n=== {engine} ===", flush=True)
         completed = subprocess.run(command, check=False)
