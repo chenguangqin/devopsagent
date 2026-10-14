@@ -1,70 +1,104 @@
-# DevOpsAgent
+# DevOpsAgent Workshop
 
-A minimal Harbor External Agent that uses Amazon Bedrock Converse with
-`global.anthropic.claude-haiku-5-5`.
+这是一个面向 Agent 开发课程的 Harbor 评测工程。它提供三个功能等价、实现技术不同的
+DevOps Agent：
 
-The first version intentionally contains only:
+- `native`：直接基于 Amazon Bedrock Converse API 实现 agent loop；
+- `langchain`：基于 LangChain `create_agent`；
+- `strands`：基于 Strands Agents SDK。
 
-- a Bedrock Converse adapter;
-- one Harbor-bound `shell` tool;
-- a model → tool → result agent loop;
-- max-step and tool-timeout limits;
-- Harbor `AgentContext` usage and a JSON trace.
+三者统一以 CLI 运行，生产代码不依赖 Harbor。目前不实现 ACP 协议。
 
-It is the baseline for later experiments with structured tools, skills, RAG,
-subagents, dynamic workflows, policies, and memory.
-
-## Architecture
+## 架构
 
 ```text
-Harbor Trial
-  └── DevOpsAgent (host process)
-      ├── BedrockConverseAdapter
-      │   └── Claude Haiku 5.5
-      └── AgentLoop
-          └── ShellTool
-              └── BaseEnvironment.exec()
-                  └── isolated task container
+                         production boundary
+┌─────────────────────────────────────────────────────────────┐
+│ devopsagent-native | devopsagent-langchain | ...            │
+│         model → agent loop → JSONL tool call                │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ stdin/stdout
+                    ┌──────────┴──────────┐
+                    │                     │
+             local tool client     Harbor adapter
+                    │                     │
+             local subprocess      BaseEnvironment.exec()
+                                          │
+                                   isolated Trial container
 ```
 
-Bedrock calls run on the host, so an EC2 instance profile can provide AWS
-credentials without mounting them into the benchmark container.
+关键边界：
 
-## Setup
+- `src/devopsagent/` 中没有任何 Harbor import；
+- Agent 调用模型发生在宿主机，可直接使用 EC2 instance profile；
+- Harbor 只存在于 `evaluation/`，负责启动黑盒 CLI 并转发工具调用；
+- 同一个 Agent CLI 不经过 Harbor 也可以在本地目录运行。
 
-Requires Python 3.12+, `uv`, Docker, Docker Compose, and Buildx.
+## 安装
+
+Python 3.12+，使用 `uv`：
 
 ```bash
-git clone <your-repository-url> devopsagent
-cd devopsagent
+# 只安装原生 Bedrock Agent
 uv sync
+
+# 安装某一种框架
+uv sync --extra langchain
+uv sync --extra strands
+
+# 课程评测机：三个 Agent + Harbor + 开发工具
+uv sync --all-extras
 ```
 
-Validate the custom Harbor options:
+评测机还需要 Docker、Docker Compose 和 Buildx。
+
+## 独立运行 CLI
+
+CLI 的本地模式会把 shell 工具绑定到指定工作目录：
 
 ```bash
-uv run harbor agent schema devopsagent.harbor_agent:DevOpsAgent
+uv run devopsagent-native \
+  --protocol local \
+  --workdir /tmp/agent-work \
+  --instruction "创建 hello.txt，写入 hello，并验证内容"
+
+uv run devopsagent-langchain \
+  --protocol local \
+  --workdir /tmp/agent-work \
+  --instruction "检查当前目录并生成目录清单"
+
+uv run devopsagent-strands \
+  --protocol local \
+  --workdir /tmp/agent-work \
+  --instruction "创建并运行一个输出 ok 的 shell 脚本"
 ```
 
-Validate Bedrock independently of Docker:
+公共参数包括：
+
+| 参数 | 默认值 |
+|---|---|
+| `--model-id` | `global.anthropic.claude-haiku-5-5` |
+| `--region` | `us-west-2` |
+| `--max-steps` | `12` |
+| `--max-tokens` | `4096` |
+| `--system-prompt` | 内置 DevOps 提示词 |
+
+## Harbor 评测
+
+先验证适配器参数：
 
 ```bash
-uv run python scripts/check_bedrock.py
+uv run harbor agent schema evaluation.harbor_adapter:NativeCliHarborAgent
+uv run harbor agent schema evaluation.harbor_adapter:LangChainCliHarborAgent
+uv run harbor agent schema evaluation.harbor_adapter:StrandsCliHarborAgent
 ```
 
-Run unit tests:
-
-```bash
-uv run pytest -q
-uv run ruff check .
-```
-
-## Run the included Harbor task
+单独评测一个 Agent：
 
 ```bash
 uv run harbor run \
   -p examples/tasks/hello-devopsagent \
-  -a devopsagent.harbor_agent:DevOpsAgent \
+  -a evaluation.harbor_adapter:NativeCliHarborAgent \
   -m global.anthropic.claude-haiku-5-5 \
   --ak region=us-west-2 \
   --ak max_steps=8 \
@@ -72,36 +106,70 @@ uv run harbor run \
   -e docker
 ```
 
-Expected result:
+将类名替换为 `LangChainCliHarborAgent` 或 `StrandsCliHarborAgent` 即可评测另外两种
+实现。
 
-```text
-Trials: 1
-Exceptions: 0
-Mean: 1.000
-```
+### 三 Agent 对比
 
-The agent writes its trace into the Harbor trial's agent logs as
-`agent-result.json`.
-
-## Configuration
-
-Inspect the authoritative schema:
+评测矩阵会对相同任务或数据集依次执行三个 Agent，并输出分数、异常数和 token：
 
 ```bash
-uv run harbor agent schema devopsagent.harbor_agent:DevOpsAgent
+uv run python -m evaluation.run_matrix \
+  --path examples/tasks/hello-devopsagent \
+  --model-id global.anthropic.claude-haiku-5-5 \
+  --region us-west-2 \
+  --max-steps 8
 ```
 
-Current options:
+也可以使用等价入口 `uv run devopsagent-eval ...`。
 
-| Option | Default | Meaning |
-|---|---:|---|
-| `region` | `us-west-2` | Bedrock Runtime region |
-| `max_steps` | `12` | Maximum model turns |
-| `max_tokens` | `4096` | Maximum output tokens per model call |
-| `tool_timeout_seconds` | `120` | Shell command timeout |
-| `max_tool_output_chars` | `50000` | Maximum tool result size |
-| `system_prompt` | built in | Agent system instruction |
+评测数据集：
 
-Claude Haiku 5.5 rejects the `temperature` parameter, so this adapter does not
-send it.
+```bash
+uv run python -m evaluation.run_matrix \
+  --dataset <dataset-name>@<version> \
+  --attempts 3 \
+  --n-concurrent 2
+```
 
+结果保存在 `evaluation/jobs/<timestamp>/`，其中每个 engine 有独立的 Harbor Job，
+总表写入 `matrix-summary.json`。
+
+## CLI 工具协议
+
+协议为逐行 JSON，stdout 只承载协议消息，日志写 stderr。
+
+```text
+adapter -> CLI  {"type":"start","instruction":"..."}
+CLI -> adapter  {"type":"tool_call","id":"...","name":"shell","arguments":{...}}
+adapter -> CLI  {"type":"tool_result","id":"...","status":"success","output":"..."}
+CLI -> adapter  {"type":"finish","status":"completed", ...metrics}
+```
+
+因此以后可以增加 HTTP、容器或远程服务 transport，而不需要修改三个 Agent 的工具
+语义。ACP 可作为后续单独的协议层加入。
+
+## 课程实验建议
+
+三个 Agent 保持模型、任务和工具一致，可以用于观察开发框架本身带来的差异。之后可逐步
+增加实验变量：
+
+1. agent loop 和最大步数；
+2. 工具 schema、输出截断和错误反馈；
+3. system prompt、skills 与 context policy；
+4. RAG、记忆和动态 workflow；
+5. subagent 与并行策略；
+6. 在隐藏任务集上执行回归门禁。
+
+每轮只改变一个变量，至少运行多个 attempt，并同时记录 reward、异常、token 和执行时间。
+
+## 开发验证
+
+```bash
+uv run python scripts/check_bedrock.py
+uv run pytest -q
+uv run ruff check .
+```
+
+仓库内置的 `hello-devopsagent` 任务用于验证“模型调用 → CLI 协议 → Harbor 环境工具 →
+verifier”整条链路。

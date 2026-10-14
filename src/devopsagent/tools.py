@@ -1,20 +1,12 @@
-"""Tools bound to a Harbor Trial environment."""
+"""Framework-neutral tools."""
 
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass
 from typing import Any, Protocol
 
-
-class Environment(Protocol):
-    async def exec(
-        self,
-        command: str,
-        cwd: str | None = None,
-        env: dict[str, str] | None = None,
-        timeout_sec: int | None = None,
-        user: str | int | None = None,
-    ) -> Any: ...
+from devopsagent.protocol import ToolClient
 
 
 class Tool(Protocol):
@@ -27,11 +19,9 @@ class Tool(Protocol):
 
 @dataclass
 class ShellTool:
-    """Execute a shell command inside the current Harbor environment."""
+    """Shell tool delegated to a local or remote tool client."""
 
-    environment: Environment
-    timeout_seconds: int = 120
-    max_output_chars: int = 50_000
+    client: ToolClient
     name: str = "shell"
 
     def bedrock_spec(self) -> dict[str, Any]:
@@ -71,20 +61,13 @@ class ShellTool:
         if cwd is not None and not isinstance(cwd, str):
             return "Error: cwd must be a string"
 
-        result = await self.environment.exec(
-            command=command,
-            cwd=cwd,
-            timeout_sec=self.timeout_seconds,
+        result = await asyncio.to_thread(
+            self.client.call,
+            self.name,
+            {"command": command, **({"cwd": cwd} if cwd else {})},
         )
-        stdout = result.stdout or ""
-        stderr = result.stderr or ""
-        output = (
-            f"exit_code: {result.return_code}\n"
-            f"stdout:\n{stdout}\n"
-            f"stderr:\n{stderr}"
-        )
-        if len(output) > self.max_output_chars:
-            omitted = len(output) - self.max_output_chars
-            output = f"{output[: self.max_output_chars]}\n... <truncated {omitted} chars>"
+        output = result.get("output", "")
+        if result.get("status") == "error" and not output.startswith("Error:"):
+            return f"Error: {output}"
         return output
 

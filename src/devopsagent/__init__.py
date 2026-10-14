@@ -1,6 +1,4 @@
-"""Minimal Harbor-compatible DevOps agent."""
+"""CLI-first DevOps agents with no benchmark framework dependency."""
 
-from devopsagent.harbor_agent import DevOpsAgent
-
-__all__ = ["DevOpsAgent"]
+__all__: list[str] = []
 
