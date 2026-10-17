@@ -42,6 +42,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Task name or glob to include; repeat for multiple selections.",
     )
     parser.add_argument(
+        "--preset",
+        type=Path,
+        help="Text file containing one included task name per line.",
+    )
+    parser.add_argument(
         "--exclude-task",
         action="append",
         default=[],
@@ -55,6 +60,10 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    if args.preset:
+        args.include_task = list(
+            dict.fromkeys([*load_preset(args.preset), *args.include_task])
+        )
     run_name = datetime.now().strftime("%Y-%m-%d__%H-%M-%S")
     run_dir = args.output_dir / run_name
     run_dir.mkdir(parents=True, exist_ok=False)
@@ -115,6 +124,17 @@ def main(argv: Sequence[str] | None = None) -> int:
         item["return_code"] != 0 or item["errors"] > 0 for item in summaries
     )
     return 1 if failed else 0
+
+
+def load_preset(path: Path) -> list[str]:
+    tasks = []
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if line and not line.startswith("#"):
+            tasks.append(line)
+    if not tasks:
+        raise ValueError(f"preset contains no task names: {path}")
+    return tasks
 
 
 def summarize_result(

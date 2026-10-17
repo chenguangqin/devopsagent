@@ -52,6 +52,9 @@ uv sync --all-extras
 
 评测机还需要 Docker、Docker Compose 和 Buildx。
 
+完整的 AWS Workshop 环境搭建、版本固定、Bedrock 权限、Harbor Smoke Test 和故障处理见
+[`docs/EXPERIMENT_ENVIRONMENT_SETUP_SPEC.md`](docs/EXPERIMENT_ENVIRONMENT_SETUP_SPEC.md)。
+
 ## 独立运行 CLI
 
 CLI 的本地模式会把 shell 工具绑定到指定工作目录：
@@ -165,6 +168,21 @@ uv run devopsagent-eval \
 
 基础设施跑通后，移除 `--engines native` 即可用三个 Agent 跑同一任务集。任务清单也
 保存在 `evaluation/presets/terminal-bench-course.txt`。
+
+### 学员 Agent 改造赛
+
+10 道公开开发赛题、筛选理由、计分、Oracle 预热及隐藏保留集建议见
+[`docs/COMPETITION_TASK_SUITE.md`](docs/COMPETITION_TASK_SUITE.md)。
+
+```bash
+uv run devopsagent-eval \
+  --dataset terminal-bench@2.0 \
+  --preset evaluation/presets/terminal-bench-competition.txt \
+  --engines native \
+  --max-steps 40 \
+  --tool-timeout-seconds 300 \
+  --n-concurrent 2
+```
 
 ## CLI 工具协议
 
