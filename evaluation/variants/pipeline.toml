@@ -1,0 +1,8 @@
+[variant]
+id = "pipeline"
+title = "Analyze, implement, verify, and repair pipeline"
+status = "planned"
+agent = "evaluation.agent_engineering_adapter:PipelineHarborAgent"
+
+[agent_kwargs]
+repair_rounds = 1

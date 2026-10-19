@@ -1,0 +1,9 @@
+[variant]
+id = "plan-and-execute"
+title = "Explicit planner and bounded executor"
+status = "planned"
+agent = "evaluation.agent_engineering_adapter:PlanExecuteHarborAgent"
+
+[agent_kwargs]
+planner_max_tokens = 2048
+replan_after_failure = true

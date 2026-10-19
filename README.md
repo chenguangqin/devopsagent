@@ -184,6 +184,23 @@ uv run devopsagent-eval \
   --n-concurrent 2
 ```
 
+### 多场景 Agent Engineering 实验
+
+跨 Terminal、数据分析、工具调用、软件工程和可观测性的独立实验见
+[`docs/AGENT_ENGINEERING_EVALUATION_SPEC.md`](docs/AGENT_ENGINEERING_EVALUATION_SPEC.md)。
+该实验使用 `agent-engineering-eval`、独立 suite/variant 配置和结果目录，不改变上面的
+DevOps 比赛。
+
+```bash
+uv run agent-engineering-eval --list
+
+uv run agent-engineering-eval \
+  --suite evaluation/suites/agent-engineering-core.toml \
+  --include-status ready \
+  --include-status spike \
+  --dry-run
+```
+
 ## CLI 工具协议
 
 协议为逐行 JSON，stdout 只承载协议消息，日志写 stderr。

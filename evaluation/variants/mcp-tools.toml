@@ -1,0 +1,8 @@
+[variant]
+id = "mcp-tools"
+title = "ReAct with MCP tool transport"
+status = "planned"
+agent = "evaluation.agent_engineering_adapter:McpHarborAgent"
+
+[agent_kwargs]
+mcp_profile = "course-default"

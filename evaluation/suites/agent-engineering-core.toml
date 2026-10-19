@@ -1,0 +1,45 @@
+[suite]
+id = "agent-engineering-core"
+title = "Agent Engineering Core-6"
+version = "0.1"
+description = "Fast public development suite. DevOps competition presets are not referenced."
+
+[[tracks]]
+id = "terminal"
+benchmark = "Terminal-Bench"
+dataset = "terminal-bench@2.0"
+status = "ready"
+purpose = "Environment exploration, coding, debugging, and precise delivery."
+tasks = ["cancel-async-tasks", "write-compressor"]
+weight = 1.0
+n_concurrent = 1
+
+[[tracks]]
+id = "data-analysis"
+benchmark = "DABstep"
+dataset = "dabstep@1.0"
+status = "spike"
+purpose = "Multi-step data analysis, Python/pandas, and business-answer accuracy."
+tasks = ["dabstep-1", "dabstep-10"]
+weight = 1.0
+n_concurrent = 1
+
+[[tracks]]
+id = "tool-calling"
+benchmark = "BFCL Parity"
+dataset = "bfcl_parity@1.0"
+status = "spike"
+purpose = "Tool selection, argument construction, irrelevance detection, and parallel calls."
+tasks = ["bfcl-irrelevance-103"]
+weight = 1.0
+n_concurrent = 1
+
+[[tracks]]
+id = "codebase-qna"
+benchmark = "SWE-Atlas QnA"
+dataset = "scale-ai/swe-atlas-qna@1.0"
+status = "spike"
+purpose = "Repository comprehension and evidence-grounded codebase questions."
+tasks = ["task-6905333b74f22949d97ba998"]
+weight = 1.0
+n_concurrent = 1

@@ -1,0 +1,8 @@
+[variant]
+id = "critic-reviewer"
+title = "Worker plus independent critic"
+status = "planned"
+agent = "evaluation.agent_engineering_adapter:CriticReviewerHarborAgent"
+
+[agent_kwargs]
+critic_max_tokens = 2048

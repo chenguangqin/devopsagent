@@ -1,0 +1,7 @@
+[variant]
+id = "react-baseline"
+title = "ReAct-style native loop"
+status = "ready"
+agent = "evaluation.harbor_adapter:NativeCliHarborAgent"
+
+[agent_kwargs]

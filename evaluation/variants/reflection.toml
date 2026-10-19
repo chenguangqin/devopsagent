@@ -1,0 +1,8 @@
+[variant]
+id = "reflection"
+title = "ReAct with verifier-triggered reflection"
+status = "planned"
+agent = "evaluation.agent_engineering_adapter:ReflectionHarborAgent"
+
+[agent_kwargs]
+max_reflections = 2

@@ -27,6 +27,7 @@ devopsagent-native = "devopsagent.cli:main_native"
 devopsagent-langchain = "devopsagent.cli:main_langchain"
 devopsagent-strands = "devopsagent.cli:main_strands"
 devopsagent-eval = "evaluation.run_matrix:main"
+agent-engineering-eval = "evaluation.agent_engineering:main"
 
 [dependency-groups]
 dev = [
