@@ -44,7 +44,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--preset",
         type=Path,
-        help="Text file containing one included task name per line.",
+        action="append",
+        default=[],
+        help=(
+            "Text file containing one included task name per line; "
+            "repeat to combine public and hidden task sets."
+        ),
     )
     parser.add_argument(
         "--exclude-task",
@@ -60,10 +65,14 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    if args.preset:
-        args.include_task = list(
-            dict.fromkeys([*load_preset(args.preset), *args.include_task])
-        )
+    preset_tasks = [
+        task_name
+        for preset_path in args.preset
+        for task_name in load_preset(preset_path)
+    ]
+    args.include_task = list(
+        dict.fromkeys([*preset_tasks, *args.include_task])
+    )
     run_name = datetime.now().strftime("%Y-%m-%d__%H-%M-%S")
     run_dir = args.output_dir / run_name
     run_dir.mkdir(parents=True, exist_ok=False)
@@ -146,6 +155,8 @@ def summarize_result(
         "engine": engine,
         "return_code": return_code,
         "mean_reward": None,
+        "reward_sum": None,
+        "full_reward_trials": 0,
         "trials": 0,
         "errors": 0,
         "input_tokens": None,
@@ -161,11 +172,17 @@ def summarize_result(
     summary["errors"] = int(stats.get("n_errored_trials", 0))
     summary["input_tokens"] = stats.get("n_input_tokens")
     summary["output_tokens"] = stats.get("n_output_tokens")
-    summary["mean_reward"] = _mean_reward(stats.get("evals", {}))
+    reward_values = _reward_values(stats.get("evals", {}))
+    if reward_values:
+        summary["mean_reward"] = sum(reward_values) / len(reward_values)
+        summary["reward_sum"] = sum(reward_values)
+        summary["full_reward_trials"] = sum(
+            value == 1.0 for value in reward_values
+        )
     return summary
 
 
-def _mean_reward(evals: dict[str, Any]) -> float | None:
+def _reward_values(evals: dict[str, Any]) -> list[float]:
     values: list[float] = []
     for eval_stats in evals.values():
         eval_values: list[float] = []
@@ -184,14 +201,19 @@ def _mean_reward(evals: dict[str, Any]) -> float | None:
             except (TypeError, ValueError):
                 continue
             values.extend([numeric_reward] * len(trial_names))
-    return sum(values) / len(values) if values else None
+    return values
 
 
 def print_summary(summaries: list[dict[str, Any]]) -> None:
     print("\n=== comparison ===")
-    print(f"{'engine':<12} {'mean':>8} {'trials':>8} {'errors':>8} {'tokens':>12}")
+    print(
+        f"{'engine':<12} {'mean':>8} {'score':>8} {'full':>8} "
+        f"{'trials':>8} {'errors':>8} {'tokens':>12}"
+    )
     for item in summaries:
         mean = "-" if item["mean_reward"] is None else f"{item['mean_reward']:.3f}"
+        score = "-" if item["reward_sum"] is None else f"{item['reward_sum']:.1f}"
+        full = f"{item['full_reward_trials']}/{item['trials']}"
         token_values = (item["input_tokens"], item["output_tokens"])
         tokens = (
             "-"
@@ -199,8 +221,8 @@ def print_summary(summaries: list[dict[str, Any]]) -> None:
             else str(sum(int(value) for value in token_values))
         )
         print(
-            f"{item['engine']:<12} {mean:>8} {item['trials']:>8} "
-            f"{item['errors']:>8} {tokens:>12}"
+            f"{item['engine']:<12} {mean:>8} {score:>8} {full:>8} "
+            f"{item['trials']:>8} {item['errors']:>8} {tokens:>12}"
         )
 
 

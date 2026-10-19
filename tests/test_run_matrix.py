@@ -35,6 +35,8 @@ def test_summarize_result_computes_mean_from_reward_stats(tmp_path: Path):
 
     assert summary["trials"] == 3
     assert summary["mean_reward"] == 2 / 3
+    assert summary["reward_sum"] == 2
+    assert summary["full_reward_trials"] == 2
     assert summary["input_tokens"] == 100
 
 
@@ -64,3 +66,18 @@ def test_load_preset_ignores_comments_and_blank_lines(tmp_path: Path):
     )
 
     assert load_preset(preset) == ["fix-git", "regex-log"]
+
+
+def test_matrix_parser_accepts_multiple_presets():
+    args = build_parser().parse_args(
+        [
+            "--dataset",
+            "terminal-bench@2.0",
+            "--preset",
+            "public.txt",
+            "--preset",
+            "/secure/hidden.txt",
+        ]
+    )
+
+    assert args.preset == [Path("public.txt"), Path("/secure/hidden.txt")]

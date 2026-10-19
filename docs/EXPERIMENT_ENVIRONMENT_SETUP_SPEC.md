@@ -424,6 +424,118 @@ Bedrock connection works
 
 ## 14. 验证三个 Harbor Adapter
 
+### 14.1 Adapter 的作用
+
+Harbor 命令中的：
+
+```text
+evaluation.harbor_adapter:NativeCliHarborAgent
+```
+
+采用标准 Python 导入路径格式：
+
+```text
+Python 模块路径:类名
+```
+
+具体对应：
+
+```text
+evaluation/harbor_adapter.py
+└── class NativeCliHarborAgent
+```
+
+`NativeCliHarborAgent` 不是负责推理的 Agent，而是 Harbor 与 Native Agent CLI 之间的
+协议桥接层。它负责：
+
+1. 接收 Harbor 从 `instruction.md` 读取的任务指令；
+2. 在 EC2 宿主机启动 Native Agent CLI；
+3. 通过 stdin/stdout JSONL 协议向 CLI 发送任务；
+4. 接收 CLI 发出的 shell 工具调用；
+5. 使用 Harbor `BaseEnvironment.exec()` 在当前 Trial 的 Docker 容器中执行命令；
+6. 将命令输出返回给 Agent CLI；
+7. 将 token、步骤数和工具调用数等指标写入 Harbor `AgentContext`。
+
+Adapter 启动的 CLI 等价于：
+
+```bash
+python -m devopsagent.cli \
+  --engine native \
+  --protocol stdio
+```
+
+主要交互流程：
+
+```text
+Harbor
+  │ instruction
+  ▼
+NativeCliHarborAgent
+  │ JSONL start
+  ▼
+Native Agent CLI
+  │ JSONL tool_call
+  ▼
+NativeCliHarborAgent
+  │ BaseEnvironment.exec()
+  ▼
+Task Docker 容器
+  │ command result
+  ▼
+NativeCliHarborAgent
+  │ JSONL tool_result
+  ▼
+Native Agent CLI
+```
+
+典型协议消息如下：
+
+```json
+{"type":"start","instruction":"分析日志并生成 summary.csv"}
+```
+
+```json
+{
+  "type": "tool_call",
+  "id": "call-id",
+  "name": "shell",
+  "arguments": {"command": "ls -la /app"}
+}
+```
+
+```json
+{
+  "type": "tool_result",
+  "id": "call-id",
+  "status": "success",
+  "output": "exit_code: 0\nstdout:\n...\nstderr:\n"
+}
+```
+
+职责边界：
+
+| 组件 | 职责 |
+|---|---|
+| Native Agent CLI | 模型调用、推理、规划、生成命令、决定是否继续 |
+| Harbor Adapter | 协议转换、进程启动、工具调用转发、指标回填 |
+| Harbor Environment | 创建隔离环境并在 Task 容器中执行命令 |
+| Harbor Verifier | 检查最终环境状态并计算 reward |
+
+Adapter 不负责推理、生成命令、执行 verifier 或计算 reward。
+
+这种解耦使 `src/devopsagent/` 不依赖 Harbor。生产部署时可以只运行 Agent CLI；只有进行
+Benchmark 评测时才安装 Harbor 并加载 `evaluation/harbor_adapter.py`。
+
+另外两个 Adapter 使用相同协议，只是启动不同的 Agent 实现：
+
+| Adapter | Agent engine |
+|---|---|
+| `NativeCliHarborAgent` | `native` |
+| `LangChainCliHarborAgent` | `langchain` |
+| `StrandsCliHarborAgent` | `strands` |
+
+### 14.2 验证 Adapter Schema
+
 ```bash
 uv run harbor agent schema \
   evaluation.harbor_adapter:NativeCliHarborAgent
@@ -565,6 +677,119 @@ Native 链路稳定后，删除：
 ```
 
 即可依次对 Native、LangChain 和 Strands 三个 Agent 运行相同任务集。
+
+### 17.3 Native Baseline 结果解读示例
+
+以下是 Native Agent 在五个 `terminal-bench-sample@2.0` Task 上的一次真实运行结果：
+
+```text
+5/5 Mean: 0.400
+
+Trials: 5
+Exceptions: 0
+
+Reward 0.0: 3
+Reward 1.0: 2
+
+Total runtime: 5m 6s
+Total tokens: 138580
+```
+
+该结果应解读为：
+
+| 指标 | 含义 |
+|---|---|
+| `Trials: 5` | 五个 Task 都完成了评测流程 |
+| `Exceptions: 0` | Harbor、Adapter、Bedrock 和 Docker 没有基础设施异常 |
+| `Mean: 0.400` | 五个 Task 的平均 reward 为 0.4 |
+| `Reward 1.0: 2` | 两个 Task 通过 verifier |
+| `Reward 0.0: 3` | 三个 Task 的最终环境或产物未满足 verifier |
+| `Total runtime: 5m 6s` | 在 `n_concurrent=1` 下串行执行的总时间 |
+| `Total tokens: 138580` | 五个 Task 的累计输入和输出 token |
+
+这组结果可以概括为：
+
+```text
+基础设施执行成功率：100%
+Agent Task 通过率：40%
+待优化空间：60%
+```
+
+`Exceptions: 0` 不表示所有 Task 都成功。Agent 可能正常结束、没有抛出异常，甚至在最终回复
+中声称已经完成，但 Harbor Verifier 仍可能判定输出文件、服务状态或业务结果不正确。
+
+同样，Agent 达到 `max_steps` 后可以正常返回 `max_steps` 状态并进入评分流程。这种情况通常
+不会计为 Harbor Exception，但 Task 很可能得到 `0.0`。
+
+#### 查看逐题结果
+
+设置 Job 路径：
+
+```bash
+JOB=evaluation/jobs/2026-10-19__14-48-54/native
+```
+
+使用 `jq` 查看每个 Task 的 reward、Agent 状态、步骤数、工具调用数和 token：
+
+```bash
+jq -r '
+["task","reward","status","steps","tools","input","output"],
+(.trial_results[] | [
+  .task_name,
+  (.verifier_result.rewards.reward // "NA"),
+  (.agent_result.metadata.status // "NA"),
+  (.agent_result.metadata.steps // "NA"),
+  (.agent_result.metadata.tool_calls // "NA"),
+  (.agent_result.n_input_tokens // 0),
+  (.agent_result.n_output_tokens // 0)
+]) | @tsv
+' "$JOB/result.json" | column -t -s $'\t'
+```
+
+这里的 `JOB` 应替换为实际运行输出中的目录。
+
+#### 查看失败轨迹
+
+```bash
+find "$JOB" \
+  \( -name agent-result.json -o -name agent-stderr.log -o -name trial.log \) \
+  -print
+```
+
+也可以使用 Harbor Viewer：
+
+```bash
+uv run harbor view evaluation/jobs/2026-10-19__14-48-54
+```
+
+建议按照以下顺序诊断失败：
+
+1. 先确认 Task 的 reward 和 Agent 最终状态；
+2. 检查是否达到 `max_steps`；
+3. 检查 Agent 是否执行了 verifier 所需的最终验证；
+4. 检查 shell 输出是否过长、截断或污染上下文；
+5. 检查 Agent 是否误判成功并提前结束；
+6. 最后再调整 prompt、skills、tools 或 agent loop。
+
+#### Token 指标的实验意义
+
+本次五题累计约 `138580` token，平均每题约 `27716` token。该数字是多轮模型调用的累计量，
+不是单次上下文长度。Native Agent 每轮都会重新携带已有对话和工具结果，长日志、编译输出和
+测试输出会反复进入后续请求，从而放大 token 消耗。
+
+这可以直接作为课程实验的优化目标，比较：
+
+- shell 工具输出截断；
+- 针对日志、文件和测试结果的结构化工具；
+- context compression；
+- 任务 Skill；
+- 强制验证步骤；
+- 最大步骤数；
+- 失败反思与有限重试；
+- reward、token 和运行时间之间的权衡。
+
+该结果只运行了一个 Attempt，适合作为开发 baseline，不适合作为最终排名。正式比赛建议每个
+Task 至少运行三次并使用平均 reward。
 
 ## 18. 长任务和 SSH 断线处理
 

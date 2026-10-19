@@ -171,7 +171,7 @@ uv run devopsagent-eval \
 
 ### 学员 Agent 改造赛
 
-10 道公开开发赛题、筛选理由、计分、Oracle 预热及隐藏保留集建议见
+比赛采用 7 道公开开发题和 3 道讲师隐藏题。赛题结构、计分、预演及防过拟合规则见
 [`docs/COMPETITION_TASK_SUITE.md`](docs/COMPETITION_TASK_SUITE.md)。
 
 ```bash

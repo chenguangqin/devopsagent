@@ -1,18 +1,14 @@
-# Public development leaderboard: Terminal-Bench 2.0.
-# One point per task; use a separate hidden retention set for final ranking.
+# Public development set: Terminal-Bench 2.0.
+# Baseline design: 2 foundation tasks + 5 challenge tasks.
+# Final ranking must combine this file with an instructor-only hidden preset.
 
 # Foundation
-fix-git
-openssl-selfsigned-cert
 log-summary-date-ranges
-
-# Engineering
-regex-log
 sqlite-with-gcov
-nginx-request-logging
-multi-source-data-merger
-db-wal-recovery
 
 # Challenge
-configure-git-webserver
-fix-code-vulnerability
+cancel-async-tasks
+custom-memory-heap-crash
+git-leak-recovery
+llm-inference-batching-scheduler
+write-compressor
