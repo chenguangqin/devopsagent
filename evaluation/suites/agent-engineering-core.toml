@@ -40,6 +40,6 @@ benchmark = "SWE-Atlas QnA"
 dataset = "scale-ai/swe-atlas-qna@latest"
 status = "spike"
 purpose = "Repository comprehension and evidence-grounded codebase questions."
-tasks = ["task-6905333b74f22949d97ba998"]
+tasks = ["scale-ai/task-6905333b74f22949d97ba998"]
 weight = 1.0
 n_concurrent = 1

@@ -111,6 +111,8 @@ evaluation/suites/agent-engineering-core.toml
 
 Core 共 6 题。`Ready` 表示已经可以进入课程 Baseline；`Spike` 表示数据集已在 Harbor
 registry 注册，但仍须验证当前 CLI Agent 的工具协议、任务输出和 verifier 是否兼容。
+Harbor Hub package 中的 Task selector 使用组织限定名，例如
+`scale-ai/task-6905333b74f22949d97ba998`，不能省略 `scale-ai/`。
 
 ### 5.2 Broad 候选集
 

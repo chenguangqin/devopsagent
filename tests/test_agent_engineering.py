@@ -25,6 +25,8 @@ def test_load_core_suite_keeps_devops_preset_separate():
         "SWE-Atlas QnA",
     }
     assert all("competition" not in task for track in suite.tracks for task in track.tasks)
+    qna_track = next(track for track in suite.tracks if track.id == "codebase-qna")
+    assert qna_track.tasks == ("scale-ai/task-6905333b74f22949d97ba998",)
 
 
 def test_select_tracks_defaults_to_ready_only():
