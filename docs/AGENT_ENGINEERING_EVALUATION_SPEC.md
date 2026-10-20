@@ -107,10 +107,11 @@ evaluation/suites/agent-engineering-core.toml
 | Terminal | `terminal-bench@2.0` | 2 | Ready |
 | Data Analysis | `dabstep@1.0` | 2 | Spike |
 | Tool Calling | `bfcl_parity@1.0` | 1 | Spike |
-| Codebase QnA | `scale-ai/swe-atlas-qna@latest` | 1 | Spike |
+| Codebase QnA | `scale-ai/swe-atlas-qna@latest` | 1 | Planned |
 
-Core 共 6 题。`Ready` 表示已经可以进入课程 Baseline；`Spike` 表示数据集已在 Harbor
-registry 注册，但仍须验证当前 CLI Agent 的工具协议、任务输出和 verifier 是否兼容。
+Core 共 6 道候选题。`Ready` 表示已经可以进入课程 Baseline；`Spike` 表示数据集已在
+Harbor registry 注册，但仍须验证当前 CLI Agent 的工具协议、任务输出和 verifier 是否
+兼容；`Planned` 表示存在未解决的外部依赖，默认实验不运行。
 Harbor Hub package 中的 Task selector 使用组织限定名，例如
 `scale-ai/task-6905333b74f22949d97ba998`，不能省略 `scale-ai/`。
 
@@ -142,6 +143,56 @@ Broad 当前有 15 道候选题，不等于最终课堂题。每个 Track 完成
 - verifier 不产生明显偶然性。
 
 最终建议为 10～12 道公开题，加 3～4 道讲师隐藏题。
+
+### 5.3 第一轮 Qualification 结果
+
+在 Native ReAct、Haiku 5.5、一次 Attempt 下得到：
+
+| Track | 结果 | 判断 |
+|---|---:|---|
+| Terminal | `0/2` | 运行正常；两题对 Baseline 有挑战 |
+| Data Analysis | `2/2` | 运行正常；当前样题区分度不足 |
+| Tool Calling | `1/1` | 运行正常；当前样题区分度不足 |
+| Codebase QnA | 未评分 | verifier 依赖外部 OpenAI-compatible Judge |
+
+`Terminal = 0/2` 是任务失败，不是基础设施异常。DABstep 和 BFCL Parity 已验证与当前
+CLI Adapter 兼容，但正式题应从数据集中重新挑选更有区分度的样本。
+
+SWE-Atlas QnA 暂不进入课堂 Core 的可运行集合，状态由 `Spike` 调整为 `Planned`。
+
+### 5.4 SWE-Atlas QnA 外部 Judge 依赖
+
+该任务不是由我们的 Agent 调用 OpenAI。其 verifier 使用 `openai` Python SDK 进行
+LLM-as-a-Judge，并声明：
+
+```toml
+[verifier.env]
+EVAL_API_KEY = "${OPENAI_API_KEY}"
+EVAL_BASE_URL = "${OPENAI_API_BASE}"
+EVAL_MODEL = "${EVAL_MODEL:-anthropic/claude-opus-4-5-20251101}"
+```
+
+变量名表示 OpenAI-compatible 协议，不代表必须使用 OpenAI 官方模型。默认 Judge 是
+Claude，说明任务预期连接 LiteLLM、OpenRouter 或其他兼容网关。Amazon Bedrock Converse
+API 不能直接作为该脚本的 `OPENAI_API_BASE`。
+
+当前候选题包含 9 条 rubric。verifier 对每条 rubric 分别调用 Judge，单条失败时最多重试
+8 次，因此会引入：
+
+- 第二套模型凭证与网络依赖；
+- Agent 费用之外的 Judge 费用；
+- Judge 模型版本带来的评分漂移；
+- 较长且不稳定的反馈时间；
+- Workshop 学员接触外部密钥的风险。
+
+课程有三种后续选择：
+
+1. 讲师统一提供受控的 OpenAI-compatible Judge 网关；
+2. 复制任务并将 verifier 改为 Bedrock Judge，同时明确结果不再与官方分数严格可比；
+3. 替换为规则型 verifier 的代码库理解任务。
+
+在完成上述决策前，常用的 `--include-status ready --include-status spike` 不会运行
+Codebase QnA。
 
 ## 6. SkillsBench 的处理
 
@@ -390,7 +441,8 @@ evaluation/agent-jobs/<timestamp>/
 
 ### Phase 2：Qualification
 
-- 逐个运行 DABstep、BFCL Parity、SWE-Atlas QnA；
+- 为 DABstep、BFCL Parity 重新选择有区分度的样本；
+- 暂停 SWE-Atlas QnA，直到确定统一 Judge 方案或替代任务；
 - 记录兼容性、耗时和 Baseline；
 - 调整题目而不调整 Agent；
 - Qualified 后将 Track 从 `spike` 改为 `ready`。
