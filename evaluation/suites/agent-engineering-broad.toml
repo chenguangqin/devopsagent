@@ -61,7 +61,7 @@ n_concurrent = 1
 [[tracks]]
 id = "codebase-qna"
 benchmark = "SWE-Atlas QnA"
-dataset = "scale-ai/swe-atlas-qna@1.0"
+dataset = "scale-ai/swe-atlas-qna@latest"
 status = "spike"
 purpose = "Repository comprehension and evidence-grounded codebase questions."
 tasks = ["task-6905333b74f22949d97ba998", "task-6905333b74f22949d97ba999"]

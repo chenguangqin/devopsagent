@@ -107,7 +107,7 @@ evaluation/suites/agent-engineering-core.toml
 | Terminal | `terminal-bench@2.0` | 2 | Ready |
 | Data Analysis | `dabstep@1.0` | 2 | Spike |
 | Tool Calling | `bfcl_parity@1.0` | 1 | Spike |
-| Codebase QnA | `scale-ai/swe-atlas-qna@1.0` | 1 | Spike |
+| Codebase QnA | `scale-ai/swe-atlas-qna@latest` | 1 | Spike |
 
 Core 共 6 题。`Ready` 表示已经可以进入课程 Baseline；`Spike` 表示数据集已在 Harbor
 registry 注册，但仍须验证当前 CLI Agent 的工具协议、任务输出和 verifier 是否兼容。
@@ -127,7 +127,7 @@ evaluation/suites/agent-engineering-broad.toml
 | Tool Calling | `bfcl_parity@1.0` | 3 |
 | Software Engineering | `swebench-verified@1.0` | 2 |
 | Observability | `otel-bench@1.0` | 2 |
-| Codebase QnA | `scale-ai/swe-atlas-qna@1.0` | 2 |
+| Codebase QnA | `scale-ai/swe-atlas-qna@latest` | 2 |
 
 Broad 当前有 15 道候选题，不等于最终课堂题。每个 Track 完成 Qualification 后，根据
 以下条件保留 1～3 题：

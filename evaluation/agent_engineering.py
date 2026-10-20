@@ -325,6 +325,12 @@ def aggregate_summaries(summaries: Sequence[dict[str, Any]]) -> list[dict[str, A
                 "variant": variant,
                 "weighted_mean": weighted_mean,
                 "tracks": len(items),
+                "scored_tracks": len(scored),
+                "infra_failures": sum(
+                    item.get("return_code", 0) != 0
+                    or item["mean_reward"] is None
+                    for item in items
+                ),
                 "trials": sum(int(item["trials"]) for item in items),
                 "errors": sum(int(item["errors"]) for item in items),
                 "input_tokens": _sum_optional(items, "input_tokens"),
@@ -341,7 +347,10 @@ def _sum_optional(items: Sequence[dict[str, Any]], key: str) -> int | None:
 
 def print_aggregates(aggregates: Sequence[dict[str, Any]]) -> None:
     print("\n=== cross-benchmark comparison ===")
-    print(f"{'variant':<22} {'mean':>8} {'tracks':>8} {'trials':>8} {'errors':>8}")
+    print(
+        f"{'variant':<22} {'mean':>8} {'scored':>9} "
+        f"{'infra':>7} {'trials':>8} {'errors':>8}"
+    )
     for item in aggregates:
         mean = (
             "-"
@@ -349,8 +358,10 @@ def print_aggregates(aggregates: Sequence[dict[str, Any]]) -> None:
             else f"{item['weighted_mean']:.3f}"
         )
         print(
-            f"{item['variant']:<22} {mean:>8} {item['tracks']:>8} "
-            f"{item['trials']:>8} {item['errors']:>8}"
+            f"{item['variant']:<22} {mean:>8} "
+            f"{item['scored_tracks']:>4}/{item['tracks']:<4} "
+            f"{item['infra_failures']:>7} {item['trials']:>8} "
+            f"{item['errors']:>8}"
         )
 
 

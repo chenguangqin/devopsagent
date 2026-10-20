@@ -115,3 +115,26 @@ def test_aggregate_summaries_uses_track_weights():
     assert result[0]["weighted_mean"] == 0.25
     assert result[0]["trials"] == 4
     assert result[0]["input_tokens"] == 30
+    assert result[0]["scored_tracks"] == 2
+    assert result[0]["infra_failures"] == 0
+
+
+def test_aggregate_marks_missing_result_as_infrastructure_failure():
+    summaries = [
+        {
+            "variant": "react",
+            "mean_reward": None,
+            "weight": 1.0,
+            "return_code": 1,
+            "trials": 0,
+            "errors": 0,
+            "input_tokens": None,
+            "output_tokens": None,
+        }
+    ]
+
+    result = aggregate_summaries(summaries)
+
+    assert result[0]["weighted_mean"] is None
+    assert result[0]["scored_tracks"] == 0
+    assert result[0]["infra_failures"] == 1
