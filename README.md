@@ -191,6 +191,12 @@ uv run devopsagent-eval \
 该实验使用 `agent-engineering-eval`、独立 suite/variant 配置和结果目录，不改变上面的
 DevOps 比赛。
 
+学员应从
+[`docs/STUDENT_LAB_MANUAL.md`](docs/STUDENT_LAB_MANUAL.md)
+开始操作，并使用
+[`docs/templates/EXPERIMENT_RECORD.md`](docs/templates/EXPERIMENT_RECORD.md)
+记录每轮假设、控制变量、结果和发布决策。
+
 ```bash
 uv run agent-engineering-eval --list
 
