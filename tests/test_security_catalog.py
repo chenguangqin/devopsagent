@@ -82,3 +82,14 @@ def test_security_qualification_suite_is_directly_runnable():
         "repository-security",
     ]
     assert sum(len(track.tasks) for track in selected) == 3
+
+
+def test_security_student_manual_exposes_safe_runnable_path():
+    manual = Path("docs/SECURITY_AGENT_STUDENT_LAB_MANUAL.md").read_text()
+
+    assert "security-agent-qualification.toml" in manual
+    assert "command-agent-eval" in manual
+    assert "TrustedHostEnvironment" in manual
+    assert "不要把" in manual
+    assert "Boundary Violation" in manual
+    assert "SECURITY_AGENT_EXPERIMENT_RECORD.md" in manual

@@ -254,6 +254,9 @@ Security Agent 使用 AWS 专项自建集、AgentDojo、SEC-bench、BountyBench 
 Terminal-Bench calibration 的组合，不使用单个混合分数替代各安全维度。冻结的数据集、
 版本、Core/Broad 选择、指标和隔离要求见
 [`docs/SECURITY_AGENT_EVALUATION_SPEC.md`](docs/SECURITY_AGENT_EVALUATION_SPEC.md)。
+学员从
+[`docs/SECURITY_AGENT_STUDENT_LAB_MANUAL.md`](docs/SECURITY_AGENT_STUDENT_LAB_MANUAL.md)
+开始操作，并使用专用实验记录模板。
 
 ```bash
 uv run security-agent-datasets --selection qualification
