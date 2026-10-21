@@ -248,6 +248,27 @@ uv run agent-engineering-eval \
   --dry-run
 ```
 
+### AWS Security Agent 数据集
+
+Security Agent 使用 AWS 专项自建集、AgentDojo、SEC-bench、BountyBench 和
+Terminal-Bench calibration 的组合，不使用单个混合分数替代各安全维度。冻结的数据集、
+版本、Core/Broad 选择、指标和隔离要求见
+[`docs/SECURITY_AGENT_EVALUATION_SPEC.md`](docs/SECURITY_AGENT_EVALUATION_SPEC.md)。
+
+```bash
+uv run security-agent-datasets --selection qualification
+
+uv run agent-engineering-eval \
+  --suite evaluation/suites/security-agent-qualification.toml \
+  --include-status ready \
+  --attempts 1 \
+  --n-concurrent 1
+```
+
+Qualification suite 当前包含三个可从 Harbor registry 运行的安全相关校准题。其余外部
+Benchmark 在完成独立 Adapter 和 Workshop 复现前保持 `spike/planned`，不会伪装成
+Harbor dataset 运行。
+
 ## CLI 工具协议
 
 协议为逐行 JSON，stdout 只承载协议消息，日志写 stderr。

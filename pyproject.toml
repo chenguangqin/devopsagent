@@ -29,6 +29,7 @@ devopsagent-strands = "devopsagent.cli:main_strands"
 devopsagent-eval = "evaluation.run_matrix:main"
 agent-engineering-eval = "evaluation.agent_engineering:main"
 command-agent-eval = "evaluation.command_framework.cli:main"
+security-agent-datasets = "evaluation.security_catalog:main"
 
 [dependency-groups]
 dev = [

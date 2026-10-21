@@ -1,0 +1,27 @@
+[suite]
+id = "security-agent-qualification"
+title = "Security Agent Workshop Qualification"
+version = "0.1"
+description = "Runnable calibration tasks; not the final Security Agent score."
+
+[[tracks]]
+id = "vulnerability-remediation"
+benchmark = "Terminal-Bench"
+dataset = "terminal-bench-sample@2.0"
+status = "ready"
+purpose = "Diagnose and repair a code vulnerability, then pass deterministic tests."
+tasks = ["fix-code-vulnerability"]
+weight = 0.5
+attempts = 1
+n_concurrent = 1
+
+[[tracks]]
+id = "repository-security"
+benchmark = "Terminal-Bench"
+dataset = "terminal-bench@2.0"
+status = "ready"
+purpose = "Recover leaked Git data safely and debug a memory-safety failure."
+tasks = ["git-leak-recovery", "custom-memory-heap-crash"]
+weight = 0.5
+attempts = 1
+n_concurrent = 1

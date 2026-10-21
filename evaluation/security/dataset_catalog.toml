@@ -1,0 +1,168 @@
+[catalog]
+id = "aws-security-agent"
+title = "AWS Security Agent Evaluation Dataset Portfolio"
+version = "0.1"
+frozen_at = "2026-10-21"
+primary_metric = "secure_utility"
+
+[selection]
+qualification_dataset_ids = ["terminal-bench-security-calibration"]
+core_dataset_ids = [
+  "aws-security-arena",
+  "agentdojo",
+  "sec-bench",
+  "terminal-bench-security-calibration",
+]
+broad_dataset_ids = [
+  "aws-security-arena",
+  "agentdojo",
+  "sec-bench",
+  "bountybench",
+  "terminal-bench-security-calibration",
+]
+
+[[datasets]]
+id = "aws-security-arena"
+title = "AWS Security Arena"
+role = "primary"
+status = "planned"
+harness = "harbor-custom"
+source = "course-authored"
+revision = "0.1"
+license = "course-internal"
+public_cases = 12
+hidden_cases = 6
+attempts = 3
+requires_docker = true
+capabilities = [
+  "iam-least-privilege",
+  "resource-policy-analysis",
+  "iac-remediation",
+  "incident-investigation",
+  "evidence-grounding",
+  "authorization-boundary",
+  "sensitive-data-protection",
+  "mcp-tool-safety",
+  "prompt-injection-resistance",
+]
+selected = [
+  "iam-policy-overprivilege",
+  "iam-cross-account-trust",
+  "s3-public-access-remediation",
+  "security-group-exposure-remediation",
+  "cloudtrail-credential-abuse",
+  "guardduty-compromise-triage",
+  "vulnerable-lambda-dependency",
+  "secrets-in-build-logs",
+  "mcp-tool-parameter-validation",
+  "mcp-transient-error-recovery",
+  "mcp-indirect-prompt-injection",
+  "unauthorized-destructive-request",
+]
+notes = "Primary domain benchmark. Uses synthetic AWS evidence and mock APIs; no live AWS account."
+
+[[datasets]]
+id = "agentdojo"
+title = "AgentDojo"
+role = "adversarial"
+status = "spike"
+harness = "agentdojo"
+source = "https://github.com/ethz-spylab/agentdojo.git"
+revision = "v0.1.35"
+commit = "a75aba7631d3ca5fb7ab938965c97ead2f9ff84b"
+license = "MIT"
+public_cases = 8
+hidden_cases = 4
+attempts = 3
+requires_docker = false
+capabilities = [
+  "prompt-injection-resistance",
+  "tool-output-trust-boundary",
+  "sensitive-data-protection",
+  "secure-utility",
+]
+selected = [
+  "workspace-clean-and-attack-pairs",
+  "slack-clean-and-attack-pairs",
+  "banking-clean-and-attack-pairs",
+  "travel-clean-and-attack-pairs",
+]
+notes = "Every attacked case must retain its clean counterpart to measure false refusal."
+
+[[datasets]]
+id = "sec-bench"
+title = "SEC-bench"
+role = "software-security"
+status = "planned"
+harness = "sec-bench"
+source = "https://github.com/sec-bench/sec-bench.git"
+revision = "31eb43485a3de47da260be0f978528b1f2314415"
+commit = "31eb43485a3de47da260be0f978528b1f2314415"
+license = "MIT"
+public_cases = 4
+hidden_cases = 4
+attempts = 3
+requires_docker = true
+capabilities = [
+  "vulnerability-reproduction",
+  "root-cause-analysis",
+  "security-patching",
+  "regression-verification",
+]
+selected = [
+  "stratified-low-setup-reproduction",
+  "stratified-low-setup-patching",
+]
+notes = "Start with patch and reproduction tracks; freeze exact instance IDs after qualification."
+
+[[datasets]]
+id = "bountybench"
+title = "BountyBench"
+role = "end-to-end-security"
+status = "planned"
+harness = "bountybench"
+source = "https://github.com/EnvCommons/BountyBench.git"
+revision = "5aa4bb337f830bdcd0cb96806eda51f492df5189"
+commit = "5aa4bb337f830bdcd0cb96806eda51f492df5189"
+license = "benchmark-specific"
+public_cases = 0
+hidden_cases = 6
+attempts = 3
+requires_docker = true
+capabilities = [
+  "vulnerability-detection",
+  "controlled-exploitation",
+  "security-patching",
+  "end-to-end-investigation",
+]
+selected = [
+  "two-projects-detect-exploit-patch",
+]
+notes = "Broad/hidden gate only. Offensive phases require isolated infrastructure and explicit authorization."
+
+[[datasets]]
+id = "terminal-bench-security-calibration"
+title = "Terminal-Bench Security Calibration"
+role = "calibration"
+status = "ready"
+harness = "harbor"
+source = "Harbor registry"
+revision = "terminal-bench@2.0"
+license = "dataset-specific"
+public_cases = 3
+hidden_cases = 0
+attempts = 1
+requires_docker = true
+capabilities = [
+  "repository-investigation",
+  "vulnerability-remediation",
+  "secret-recovery",
+  "memory-safety-debugging",
+  "verification-discipline",
+]
+selected = [
+  "terminal-bench-sample@2.0/fix-code-vulnerability",
+  "terminal-bench@2.0/git-leak-recovery",
+  "terminal-bench@2.0/custom-memory-heap-crash",
+]
+notes = "Calibration only; it must not dominate the Security Agent aggregate score."
