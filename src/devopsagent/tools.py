@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from typing import Any, Protocol
 
 from devopsagent.protocol import ToolClient
+from devopsagent.runners.base import SHELL_TOOL_DESCRIPTION
 
 
 class Tool(Protocol):
@@ -28,10 +29,7 @@ class ShellTool:
         return {
             "toolSpec": {
                 "name": self.name,
-                "description": (
-                    "Run a shell command in the isolated benchmark environment. "
-                    "Use it to inspect files, execute programs, and modify the environment."
-                ),
+                "description": SHELL_TOOL_DESCRIPTION,
                 "inputSchema": {
                     "json": {
                         "type": "object",

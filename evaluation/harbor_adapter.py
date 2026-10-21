@@ -25,7 +25,7 @@ class CliAgentOptions(AgentOptions):
     max_steps: int = Field(default=12, ge=1, le=100)
     max_tokens: int = Field(default=4096, ge=64, le=64_000)
     tool_timeout_seconds: int = Field(default=120, ge=1, le=3600)
-    max_tool_output_chars: int = Field(default=50_000, ge=1_000, le=500_000)
+    max_tool_output_chars: int = Field(default=16_000, ge=1_000, le=500_000)
     system_prompt: str = Field(default=DEFAULT_SYSTEM_PROMPT)
 
 

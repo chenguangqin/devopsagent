@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from devopsagent.bedrock import ConverseProvider
+from devopsagent.runners.base import budget_note
 from devopsagent.tools import Tool
 
 
@@ -103,6 +104,7 @@ class AgentLoop:
                     except Exception as exc:  # keep the loop alive on tool failure
                         output = f"Error: {type(exc).__name__}: {exc}"
                         status = "error"
+                output += budget_note(step, self.config.max_steps)
 
                 tool_results.append(
                     {

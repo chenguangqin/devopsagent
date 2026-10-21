@@ -74,7 +74,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--max-steps", type=int, default=40)
     parser.add_argument("--max-tokens", type=int, default=4096)
     parser.add_argument("--tool-timeout-seconds", type=int, default=300)
-    parser.add_argument("--max-tool-output-chars", type=int, default=50_000)
+    parser.add_argument("--max-tool-output-chars", type=int, default=16_000)
     parser.add_argument("--attempts", type=int, default=1)
     parser.add_argument("--n-concurrent", type=int, default=1)
     parser.add_argument("--environment", default="docker")

@@ -74,7 +74,7 @@ class LocalToolClient:
 
     workdir: Path
     timeout_seconds: int = 120
-    max_output_chars: int = 50_000
+    max_output_chars: int = 16_000
 
     def call(self, name: str, arguments: dict[str, Any]) -> dict[str, Any]:
         if name != "shell":
@@ -136,8 +136,13 @@ def format_exec_result(
         f"stderr:\n{stderr or ''}"
     )
     if len(output) > max_output_chars:
+        # Keep both ends: errors and summaries usually appear at the end.
         omitted = len(output) - max_output_chars
-        output = f"{output[:max_output_chars]}\n... <truncated {omitted} chars>"
+        head = max_output_chars // 2
+        tail = max_output_chars - head
+        output = (
+            f"{output[:head]}\n... <truncated {omitted} chars> ...\n{output[-tail:]}"
+        )
     return output
 
 

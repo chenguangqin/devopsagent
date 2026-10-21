@@ -58,7 +58,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="Task name or glob to exclude; repeat for multiple selections.",
     )
     parser.add_argument("--tool-timeout-seconds", type=int, default=120)
-    parser.add_argument("--max-tool-output-chars", type=int, default=50_000)
+    parser.add_argument("--max-tool-output-chars", type=int, default=16_000)
     parser.add_argument("--output-dir", type=Path, default=Path("evaluation/jobs"))
     return parser
 

@@ -8,7 +8,7 @@ from typing import Any
 from devopsagent.bedrock import TRANSIENT_ERROR_CODES, bedrock_client_config
 from devopsagent.protocol import ToolClient
 from devopsagent.result import AgentResult
-from devopsagent.runners.base import RunnerConfig
+from devopsagent.runners.base import SHELL_TOOL_DESCRIPTION, RunnerConfig, budget_note
 
 
 class StrandsRunner:
@@ -38,13 +38,13 @@ class StrandsRunner:
 
         calls: list[dict[str, Any]] = []
 
-        @tool
+        @tool(description=SHELL_TOOL_DESCRIPTION)
         def shell(command: str, cwd: str | None = None) -> str:
-            """Run a shell command in the task environment."""
             arguments = {"command": command, **({"cwd": cwd} if cwd else {})}
             response = tool_client.call("shell", arguments)
             calls.append({"name": "shell", "arguments": arguments})
             output = str(response.get("output", ""))
+            output += budget_note(len(calls), self.config.max_steps)
             return f"Error: {output}" if response.get("status") == "error" else output
 
         model = self.model or BedrockModel(

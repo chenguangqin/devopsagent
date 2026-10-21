@@ -35,3 +35,14 @@ def test_local_tool_client_executes_in_workdir(tmp_path: Path):
 
     assert result["status"] == "success"
     assert str(tmp_path) in result["output"]
+
+
+def test_format_exec_result_keeps_head_and_tail():
+    from devopsagent.protocol import format_exec_result
+
+    output = format_exec_result(1, "START" + "x" * 5000 + "END", "", 1000)
+
+    assert output.startswith("exit_code: 1")
+    assert "START" in output
+    assert output.endswith("END\nstderr:\n")
+    assert "<truncated" in output
