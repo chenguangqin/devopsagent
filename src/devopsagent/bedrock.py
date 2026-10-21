@@ -8,6 +8,26 @@ from typing import Any, Protocol
 import boto3
 from botocore.config import Config
 
+# Error codes Bedrock returns for transient server-side failures, including
+# errors raised mid-stream by ConverseStream that botocore cannot retry itself.
+TRANSIENT_ERROR_CODES = frozenset(
+    {
+        "internalserverexception",
+        "serviceunavailableexception",
+        "modelstreamerrorexception",
+        "throttlingexception",
+    }
+)
+
+
+def bedrock_client_config() -> Config:
+    """Shared botocore config for every Bedrock client the agents create."""
+    return Config(
+        connect_timeout=10,
+        read_timeout=300,
+        retries={"max_attempts": 8, "mode": "adaptive"},
+    )
+
 
 class ConverseProvider(Protocol):
     """Model interface consumed by the agent loop."""
@@ -37,11 +57,7 @@ class BedrockConverseAdapter:
         self._client = client or boto3.client(
             "bedrock-runtime",
             region_name=region,
-            config=Config(
-                connect_timeout=10,
-                read_timeout=300,
-                retries={"max_attempts": 3, "mode": "standard"},
-            ),
+            config=bedrock_client_config(),
         )
 
     async def converse(

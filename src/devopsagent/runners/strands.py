@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 from typing import Any
 
+from devopsagent.bedrock import TRANSIENT_ERROR_CODES, bedrock_client_config
 from devopsagent.protocol import ToolClient
 from devopsagent.result import AgentResult
 from devopsagent.runners.base import RunnerConfig
@@ -21,12 +22,19 @@ class StrandsRunner:
     def _run_sync(self, instruction: str, tool_client: ToolClient) -> AgentResult:
         try:
             from strands import Agent, tool
+            from strands.event_loop._retry import ModelRetryStrategy
             from strands.models import BedrockModel
             from strands.types.agent import Limits
         except ImportError as exc:
             raise RuntimeError(
                 "Strands dependencies are missing; install devopsagent[strands]"
             ) from exc
+
+        class TransientErrorRetryStrategy(ModelRetryStrategy):
+            """Also retry Bedrock server errors, not just throttling."""
+
+            def is_retryable(self, exception: Exception) -> bool:
+                return super().is_retryable(exception) or _is_transient(exception)
 
         calls: list[dict[str, Any]] = []
 
@@ -43,6 +51,7 @@ class StrandsRunner:
             model_id=self.config.model_id,
             region_name=self.config.region,
             max_tokens=self.config.max_tokens,
+            boto_client_config=bedrock_client_config(),
         )
         agent = Agent(
             model=model,
@@ -50,6 +59,7 @@ class StrandsRunner:
             system_prompt=self.config.system_prompt,
             callback_handler=None,
             name="devopsagent-strands",
+            retry_strategy=TransientErrorRetryStrategy(),
         )
         sdk_result = agent(
             instruction,
@@ -75,6 +85,14 @@ class StrandsRunner:
             ),
             trace=[{"stop_reason": stop_reason, "tool_calls": calls}],
         )
+
+
+def _is_transient(exception: BaseException) -> bool:
+    response = getattr(exception, "response", None)
+    if not isinstance(response, dict):
+        return False
+    code = str(response.get("Error", {}).get("Code", ""))
+    return code.lower() in TRANSIENT_ERROR_CODES
 
 
 def _usage_value(usage: Any, *names: str) -> int:

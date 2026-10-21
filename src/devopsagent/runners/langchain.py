@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 from typing import Any
 
+from devopsagent.bedrock import bedrock_client_config
 from devopsagent.protocol import ToolClient
 from devopsagent.result import AgentResult
 from devopsagent.runners.base import RunnerConfig
@@ -45,6 +46,7 @@ class LangChainRunner:
             model=self.config.model_id,
             region_name=self.config.region,
             max_tokens=self.config.max_tokens,
+            config=bedrock_client_config(),
         )
         agent = create_agent(
             model=model,

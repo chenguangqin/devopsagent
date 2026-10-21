@@ -17,6 +17,8 @@ from pydantic import Field
 from devopsagent.protocol import format_exec_result
 from devopsagent.runners.base import DEFAULT_MODEL_ID, DEFAULT_SYSTEM_PROMPT
 
+PROTOCOL_LINE_LIMIT = 64 * 1024 * 1024
+
 
 class CliAgentOptions(AgentOptions):
     region: str = Field(default="us-west-2")
@@ -76,6 +78,9 @@ class CliHarborAgent(BaseAgent):
             stdin=asyncio.subprocess.PIPE,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
+            # Protocol messages are single JSON lines; tool calls and the final
+            # trace can exceed asyncio's 64 KiB default line limit.
+            limit=PROTOCOL_LINE_LIMIT,
         )
         assert process.stdin and process.stdout and process.stderr
         stderr_task = asyncio.create_task(self._capture_stderr(process.stderr))
