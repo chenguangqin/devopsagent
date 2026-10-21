@@ -21,7 +21,7 @@
 
 | 变量 | 固定值 |
 |---|---|
-| 模型 | `global.anthropic.claude-haiku-5-5` |
+| 模型 | `global.anthropic.claude-haiku-4-5-20251001-v1:0` |
 | Region | `us-west-2` |
 | 数据集 | `terminal-bench@2.0` |
 | 环境 | Docker |
@@ -93,7 +93,7 @@ uv run devopsagent-eval \
   --dataset terminal-bench@2.0 \
   --preset evaluation/presets/terminal-bench-competition.txt \
   --engines native \
-  --model-id global.anthropic.claude-haiku-5-5 \
+  --model-id global.anthropic.claude-haiku-4-5-20251001-v1:0 \
   --region us-west-2 \
   --max-steps 40 \
   --max-tokens 4096 \
@@ -179,7 +179,7 @@ uv run devopsagent-eval \
   --preset evaluation/presets/terminal-bench-competition.txt \
   --preset /secure/instructor/terminal-bench-hidden.txt \
   --engines native \
-  --model-id global.anthropic.claude-haiku-5-5 \
+  --model-id global.anthropic.claude-haiku-4-5-20251001-v1:0 \
   --region us-west-2 \
   --max-steps 40 \
   --max-tokens 4096 \

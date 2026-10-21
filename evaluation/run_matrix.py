@@ -28,7 +28,7 @@ def build_parser() -> argparse.ArgumentParser:
         choices=tuple(ADAPTERS),
         default=list(ADAPTERS),
     )
-    parser.add_argument("--model-id", default="global.anthropic.claude-haiku-5-5")
+    parser.add_argument("--model-id", default="global.anthropic.claude-haiku-4-5-20251001-v1:0")
     parser.add_argument("--region", default="us-west-2")
     parser.add_argument("--max-steps", type=int, default=12)
     parser.add_argument("--max-tokens", type=int, default=4096)

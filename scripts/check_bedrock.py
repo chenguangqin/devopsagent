@@ -13,7 +13,7 @@ async def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--model-id",
-        default="global.anthropic.claude-haiku-5-5",
+        default="global.anthropic.claude-haiku-4-5-20251001-v1:0",
     )
     parser.add_argument("--region", default="us-west-2")
     args = parser.parse_args()

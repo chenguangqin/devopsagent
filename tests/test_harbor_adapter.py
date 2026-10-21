@@ -18,7 +18,7 @@ def test_harbor_adapters_parse_options_and_select_engine(tmp_path: Path):
     for adapter_class, engine in classes:
         agent = adapter_class(
             logs_dir=tmp_path / engine,
-            model_name="global.anthropic.claude-haiku-5-5",
+            model_name="global.anthropic.claude-haiku-4-5-20251001-v1:0",
             max_steps="7",
             region="us-west-2",
         )
@@ -26,5 +26,5 @@ def test_harbor_adapters_parse_options_and_select_engine(tmp_path: Path):
         assert agent.options.max_steps == 7
         assert agent.engine == engine
         assert agent.to_agent_info().model_info.name == (
-            "global.anthropic.claude-haiku-5-5"
+            "global.anthropic.claude-haiku-4-5-20251001-v1:0"
         )

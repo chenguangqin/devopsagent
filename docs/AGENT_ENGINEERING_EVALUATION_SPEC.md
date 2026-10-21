@@ -8,7 +8,7 @@
 | 状态 | 实施中 |
 | 适用课程 | AI Agent 开发与评测实验 |
 | 评测框架 | Harbor 0.24 |
-| 默认模型 | `global.anthropic.claude-haiku-5-5` |
+| 默认模型 | `global.anthropic.claude-haiku-4-5-20251001-v1:0` |
 | 默认区域 | `us-west-2` |
 
 本实验是现有 DevOps Agent 改造赛之外的独立实验。它不读取、不修改：

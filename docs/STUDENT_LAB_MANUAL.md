@@ -80,7 +80,7 @@ docs/templates/EXPERIMENT_RECORD.md
 
 | 变量 | 固定值 |
 |---|---|
-| Model | `global.anthropic.claude-haiku-5-5` |
+| Model | `global.anthropic.claude-haiku-4-5-20251001-v1:0` |
 | Region | `us-west-2` |
 | Environment | Docker |
 | Max steps | 40 |
@@ -837,7 +837,7 @@ uv run python scripts/check_bedrock.py
 确认 Region 为 `us-west-2`，Model ID 为：
 
 ```text
-global.anthropic.claude-haiku-5-5
+global.anthropic.claude-haiku-4-5-20251001-v1:0
 ```
 
 ### 13.7 分数下降是否代表改动无效

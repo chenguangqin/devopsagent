@@ -8,7 +8,7 @@ from typing import Protocol
 from devopsagent.protocol import ToolClient
 from devopsagent.result import AgentResult
 
-DEFAULT_MODEL_ID = "global.anthropic.claude-haiku-5-5"
+DEFAULT_MODEL_ID = "global.anthropic.claude-haiku-4-5-20251001-v1:0"
 DEFAULT_SYSTEM_PROMPT = (
     "You are a DevOps agent operating in an isolated task environment. "
     "Use shell commands to inspect the environment and complete the task. "

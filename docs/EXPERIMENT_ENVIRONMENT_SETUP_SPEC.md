@@ -24,7 +24,7 @@ Buildx、Harbor、Bedrock、课程项目和正式 Benchmark Task 验证的完整
 | Python | `>=3.12` |
 | Python 包管理器 | `uv` |
 | AWS Region | `us-west-2` |
-| Bedrock Model ID | `global.anthropic.claude-haiku-5-5` |
+| Bedrock Model ID | `global.anthropic.claude-haiku-4-5-20251001-v1:0` |
 
 关键兼容性说明：
 
@@ -353,10 +353,10 @@ aws sts get-caller-identity
 ```bash
 aws bedrock-runtime converse \
   --region us-west-2 \
-  --model-id global.anthropic.claude-haiku-5-5 \
+  --model-id global.anthropic.claude-haiku-4-5-20251001-v1:0 \
   --messages '[{
     "role":"user",
-    "content":[{"text":"Reply with exactly: Haiku 5.5 is working"}]
+    "content":[{"text":"Reply with exactly: Haiku 4.5 is working"}]
   }]' \
   --inference-config '{"maxTokens":32}'
 ```
@@ -364,7 +364,7 @@ aws bedrock-runtime converse \
 预期输出包含：
 
 ```text
-Haiku 5.5 is working
+Haiku 4.5 is working
 ```
 
 这里使用 `global.anthropic...`，而不是 `us.anthropic...`，因为当前验证的是 Bedrock
@@ -557,7 +557,7 @@ uv run harbor agent schema \
 uv run harbor run \
   -p examples/tasks/hello-devopsagent \
   -a evaluation.harbor_adapter:NativeCliHarborAgent \
-  -m global.anthropic.claude-haiku-5-5 \
+  -m global.anthropic.claude-haiku-4-5-20251001-v1:0 \
   --ak region=us-west-2 \
   --ak max_steps=8 \
   --ak max_tokens=2048 \
@@ -634,7 +634,7 @@ uv run harbor run \
   -d terminal-bench-sample@2.0 \
   -i log-summary-date-ranges \
   -a evaluation.harbor_adapter:NativeCliHarborAgent \
-  -m global.anthropic.claude-haiku-5-5 \
+  -m global.anthropic.claude-haiku-4-5-20251001-v1:0 \
   --ak region=us-west-2 \
   --ak max_steps=30 \
   --ak max_tokens=4096 \
@@ -911,7 +911,7 @@ bedrock:InvokeModelWithResponseStream
 使用已验证值：
 
 ```text
-global.anthropic.claude-haiku-5-5
+global.anthropic.claude-haiku-4-5-20251001-v1:0
 ```
 
 并在：
@@ -955,7 +955,7 @@ docker system df
 - [ ] `docker buildx version` 为 `v0.36.0`
 - [ ] `harbor --version` 或 `uv run harbor --version` 为 `0.24.0`
 - [ ] `aws sts get-caller-identity` 成功
-- [ ] Bedrock Converse 返回 `Haiku 5.5 is working`
+- [ ] Bedrock Converse 返回 `Haiku 4.5 is working`
 - [ ] Harbor 官方 Oracle Smoke Test 得分 `1.000`
 - [ ] `uv sync --all-extras` 成功
 - [ ] 项目 Bedrock 检查成功

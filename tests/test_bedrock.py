@@ -27,7 +27,7 @@ class RecordingClient:
 async def test_bedrock_request_uses_haiku_compatible_inference_config():
     client = RecordingClient()
     adapter = BedrockConverseAdapter(
-        model_id="global.anthropic.claude-haiku-5-5",
+        model_id="global.anthropic.claude-haiku-4-5-20251001-v1:0",
         region="us-west-2",
         max_tokens=256,
         client=client,
@@ -39,7 +39,7 @@ async def test_bedrock_request_uses_haiku_compatible_inference_config():
         system_prompt="system",
     )
 
-    assert client.request["modelId"] == "global.anthropic.claude-haiku-5-5"
+    assert client.request["modelId"] == "global.anthropic.claude-haiku-4-5-20251001-v1:0"
     assert client.request["inferenceConfig"] == {"maxTokens": 256}
     assert "temperature" not in client.request["inferenceConfig"]
     assert "toolConfig" not in client.request

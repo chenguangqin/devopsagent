@@ -80,7 +80,7 @@ uv run devopsagent-strands \
 
 | 参数 | 默认值 |
 |---|---|
-| `--model-id` | `global.anthropic.claude-haiku-5-5` |
+| `--model-id` | `global.anthropic.claude-haiku-4-5-20251001-v1:0` |
 | `--region` | `us-west-2` |
 | `--max-steps` | `12` |
 | `--max-tokens` | `4096` |
@@ -102,7 +102,7 @@ uv run harbor agent schema evaluation.harbor_adapter:StrandsCliHarborAgent
 uv run harbor run \
   -p examples/tasks/hello-devopsagent \
   -a evaluation.harbor_adapter:NativeCliHarborAgent \
-  -m global.anthropic.claude-haiku-5-5 \
+  -m global.anthropic.claude-haiku-4-5-20251001-v1:0 \
   --ak region=us-west-2 \
   --ak max_steps=8 \
   --ak max_tokens=2048 \
@@ -119,7 +119,7 @@ uv run harbor run \
 ```bash
 uv run python -m evaluation.run_matrix \
   --path examples/tasks/hello-devopsagent \
-  --model-id global.anthropic.claude-haiku-5-5 \
+  --model-id global.anthropic.claude-haiku-4-5-20251001-v1:0 \
   --region us-west-2 \
   --max-steps 8
 ```
