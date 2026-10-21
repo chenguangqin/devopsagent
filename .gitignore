@@ -6,5 +6,7 @@ __pycache__/
 .ruff_cache/
 jobs/
 evaluation/jobs/
+evaluation/agent-jobs/
+evaluation/command-jobs/
 dist/
 

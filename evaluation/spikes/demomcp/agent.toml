@@ -1,0 +1,52 @@
+[agent]
+schema_version = "0.2"
+id = "demomcp-strands"
+title = "Strands MCP Data Agent"
+
+[source]
+repository = "."
+revision = "git"
+
+[launcher]
+adapter = "command"
+command = ["uv", "run", "--frozen", "python", "agent_eval_entry.py"]
+input = "jsonl-stdin"
+result = "json-file"
+result_path = "run/result.json"
+startup_timeout_seconds = 30
+run_timeout_seconds = 600
+max_output_chars = 1000000
+
+[state]
+mode = "isolated-copy"
+snapshot_paths = ["memory"]
+empty_paths = ["reports", "run"]
+
+[artifacts]
+paths = ["reports/**", "run/**"]
+
+[capabilities]
+structured_result = true
+token_usage = "unavailable"
+tool_events = false
+model_override = "honored"
+step_budget = "unavailable"
+
+[parameters.mode]
+type = "enum"
+values = ["baseline", "skill"]
+default = "baseline"
+delivery = "argv"
+flag = "--mode"
+
+[parameters.model_id]
+type = "string"
+default = "us.anthropic.claude-sonnet-4-6"
+delivery = "env"
+name = "MODEL_ID"
+
+[parameters.aws_region]
+type = "string"
+default = "us-west-2"
+delivery = "env"
+name = "AWS_REGION"

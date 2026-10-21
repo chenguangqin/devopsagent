@@ -9,6 +9,11 @@ DevOps Agent：
 
 三者统一以 CLI 运行，生产代码不依赖 Harbor。目前不实现 ACP 协议。
 
+此外，Iteration 1 提供了 SDK 无关的 Generic Command Adapter。它可以直接评测一个
+完整外部 Agent，而不在评测工程内重建其 Model、Prompt、Loop、Tools、MCP、Skills 或
+Memory。Descriptor、Variant、Attempt 状态隔离和 Deadline 规则见
+[`docs/COMMAND_AGENT_EVALUATION.md`](docs/COMMAND_AGENT_EVALUATION.md)。
+
 ## 架构
 
 ```text
@@ -137,6 +142,42 @@ uv run python -m evaluation.run_matrix \
 
 结果保存在 `evaluation/jobs/<timestamp>/`，其中每个 engine 有独立的 Harbor Job，
 总表写入 `matrix-summary.json`。
+
+## 通用外部 Agent 评测
+
+外部 Agent 使用 Descriptor v0.2 和 Variant v0.2 接入。评测器从 Variant 固定的 Git
+commit 创建只读语义的 source snapshot，再为每个 attempt 建立独立副本；运行产生的
+Memory、Reports、Result 和 Artifact 不会回写源仓库，也不会流入另一个 attempt。
+
+```bash
+uv run command-agent-eval \
+  --variant path/to/baseline.toml \
+  --task-id case-001 \
+  --instruction "生成分析报告" \
+  --attempts 2 \
+  --n-concurrent 2
+```
+
+仓库中的确定性 Agent 夹具用于验证完整边界。`demomcp` 的最小 shim 和 Descriptor
+模板位于 `evaluation/spikes/demomcp/`，Evaluation Core 本身不 import Strands。
+
+### 无 Docker 的 Harbor Smoke Test
+
+Harbor 0.24 没有内置 host environment。本仓库提供
+`evaluation.host_environment:TrustedHostEnvironment`，仅用于运行仓库内可信任务：
+
+```bash
+uv run harbor run \
+  --path examples/tasks/hello-host-harbor \
+  --agent evaluation.harbor_adapter:NativeCliHarborAgent \
+  --model us.anthropic.claude-sonnet-4-6 \
+  --env evaluation.host_environment:TrustedHostEnvironment \
+  --n-concurrent 1 \
+  --yes
+```
+
+该环境将 Harbor 的虚拟路径映射到 Trial 临时目录，不启动 Docker，也不提供容器、
+网络或资源隔离，禁止用于学员提交和正式评测。
 
 ### Terminal-Bench 正式任务子集
 

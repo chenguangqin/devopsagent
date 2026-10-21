@@ -1,0 +1,60 @@
+[agent]
+schema_version = "0.2"
+id = "deterministic-agent"
+title = "Deterministic state-isolation agent"
+
+[source]
+repository = "../../../.."
+revision = "git"
+
+[launcher]
+adapter = "command"
+command = ["python3", "evaluation/fixtures/agents/deterministic-agent/agent.py"]
+input = "jsonl-stdin"
+result = "json-file"
+result_path = "run/result.json"
+startup_timeout_seconds = 5
+run_timeout_seconds = 10
+max_output_chars = 100000
+
+[state]
+mode = "isolated-copy"
+snapshot_paths = ["evaluation/fixtures/agents/deterministic-agent/memory"]
+empty_paths = [
+    "evaluation/fixtures/agents/deterministic-agent/reports",
+    "run",
+]
+
+[artifacts]
+paths = [
+    "evaluation/fixtures/agents/deterministic-agent/reports/**",
+    "run/**",
+]
+
+[capabilities]
+structured_result = true
+token_usage = "unavailable"
+tool_events = false
+model_override = "unavailable"
+step_budget = "honored"
+
+[parameters.mode]
+type = "enum"
+values = ["baseline", "experiment"]
+default = "baseline"
+delivery = "argv"
+flag = "--mode"
+
+[parameters.marker]
+type = "string"
+default = "default-marker"
+delivery = "env"
+name = "DETERMINISTIC_MARKER"
+
+[parameters.sleep_seconds]
+type = "number"
+minimum = 0
+maximum = 30
+default = 0
+delivery = "env"
+name = "DETERMINISTIC_SLEEP_SECONDS"

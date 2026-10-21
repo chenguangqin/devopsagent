@@ -28,6 +28,7 @@ devopsagent-langchain = "devopsagent.cli:main_langchain"
 devopsagent-strands = "devopsagent.cli:main_strands"
 devopsagent-eval = "evaluation.run_matrix:main"
 agent-engineering-eval = "evaluation.agent_engineering:main"
+command-agent-eval = "evaluation.command_framework.cli:main"
 
 [dependency-groups]
 dev = [
