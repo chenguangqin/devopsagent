@@ -96,6 +96,47 @@ def test_descriptor_rejects_path_escape(tmp_path: Path):
         load_descriptor(descriptor)
 
 
+def test_descriptor_loads_mcp_environment_access(tmp_path: Path):
+    repository, _ = _make_agent_repository(tmp_path)
+    descriptor = repository / "agent.toml"
+    descriptor.write_text(
+        descriptor.read_text(encoding="utf-8")
+        + """
+
+[environment]
+access = "mcp"
+tools = ["environment_exec"]
+tool_timeout_seconds = 45
+max_output_chars = 8000
+""",
+        encoding="utf-8",
+    )
+
+    loaded = load_descriptor(descriptor)
+
+    assert loaded.environment.mode == "mcp"
+    assert loaded.environment.tools == ("environment_exec",)
+    assert loaded.environment.tool_timeout_seconds == 45
+
+
+def test_descriptor_rejects_tools_without_mcp_access(tmp_path: Path):
+    repository, _ = _make_agent_repository(tmp_path)
+    descriptor = repository / "agent.toml"
+    descriptor.write_text(
+        descriptor.read_text(encoding="utf-8")
+        + """
+
+[environment]
+access = "none"
+tools = ["environment_exec"]
+""",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="requires environment.access"):
+        load_descriptor(descriptor)
+
+
 def test_variant_rejects_undeclared_parameter(tmp_path: Path):
     repository, _ = _make_agent_repository(tmp_path)
     variant_path = repository / "baseline.toml"
@@ -248,7 +289,7 @@ def test_deadline_is_enforced_and_partial_artifacts_are_diagnostic_only(
         task_id="case",
         instruction="timeout",
         attempt=1,
-        deadline_seconds=0.1,
+        deadline_seconds=0.5,
     )
 
     assert result.status == "deadline_exceeded"

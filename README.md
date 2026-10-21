@@ -272,6 +272,20 @@ Qualification suite 当前包含三个可从 Harbor registry 运行的安全相�
 Benchmark 在完成独立 Adapter 和 Workshop 复现前保持 `spike/planned`，不会伪装成
 Harbor dataset 运行。
 
+完整外部 Agent 使用 `GenericCommandHarborAgent` 和每 Trial 独立的 MCP Environment
+Gateway 操作 Harbor 环境：
+
+```bash
+uv run harbor run \
+  --dataset terminal-bench@2.0 \
+  --include-task-name git-leak-recovery \
+  --agent evaluation.generic_harbor_adapter:GenericCommandHarborAgent \
+  --ak variant_path=/absolute/path/to/agent/baseline.toml \
+  --env docker \
+  --n-concurrent 1 \
+  --yes
+```
+
 ## CLI 工具协议
 
 协议为逐行 JSON，stdout 只承载协议消息，日志写 stderr。

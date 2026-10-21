@@ -2,6 +2,7 @@
 
 from evaluation.command_framework.models import (
     AgentDescriptor,
+    EnvironmentAccess,
     ParameterDiff,
     Variant,
     VariantIdentity,
@@ -15,6 +16,7 @@ __all__ = [
     "AgentDescriptor",
     "AttemptResult",
     "CommandEvaluationRunner",
+    "EnvironmentAccess",
     "ParameterDiff",
     "Variant",
     "VariantIdentity",

@@ -19,6 +19,9 @@
 
 - Generic Command Adapter；
 - Descriptor、Variant 和 Attempt 状态隔离；
+- 学员 Security Agent 的通用 Harbor Adapter；
+- 每个 Trial 独立的 MCP Environment Gateway；
+- Tool Registry、工具 allowlist 和 Tool Call Trace；
 - Security Agent 数据集 catalog；
 - 三道可运行的 Terminal-Bench Security Calibration 题；
 - Harbor Docker 评测链路；
@@ -30,7 +33,6 @@
 - AgentDojo Adapter；
 - SEC-bench Adapter；
 - BountyBench Adapter；
-- 学员 Security Agent 的通用 Harbor Adapter；
 - Security Agent Core/Broad 的正式综合评分。
 
 因此本版手册的必做目标是完成 **接入验证、Qualification、结果诊断和实验设计**。不要把
@@ -102,7 +104,7 @@ Qualification 分数当成最终 Security Agent 分数。
 |---|---|---|
 | Generic Command Adapter | 受信任自研 Agent 的接入测试 | 仅限本人可信代码 |
 | `TrustedHostEnvironment` | 仓库自带 smoke task | 否 |
-| Harbor Docker | 正式 Calibration 和安全任务 | 是，仍需遵守课程授权 |
+| Generic Harbor Adapter + Docker | 自研 Agent 正式任务 | 是，仍需遵守课程授权 |
 | 真实 AWS Account | 本版实验不使用 | 否 |
 
 ## 5. 固定变量
@@ -297,6 +299,12 @@ result_path = "run/result.json"
 startup_timeout_seconds = 30
 run_timeout_seconds = 600
 
+[environment]
+access = "mcp"
+tools = ["environment_exec"]
+tool_timeout_seconds = 120
+max_output_chars = 16000
+
 [state]
 mode = "isolated-copy"
 snapshot_paths = ["memory"]
@@ -315,6 +323,38 @@ step_budget = "honored"
 
 `command` 必须启动你自己的完整 Agent。评测框架不负责重新创建你的 Model、Prompt、
 Agent Loop、Tools、MCP、Skills 或 Memory。
+
+`[environment]` 声明的是评测环境能力，不会向 Agent SDK 强行注入 Tool。Agent shim 必须
+读取以下环境变量并使用自己的 MCP Client 连接：
+
+```text
+AGENT_EVAL_MCP_TRANSPORT
+AGENT_EVAL_MCP_URL
+AGENT_EVAL_MCP_TOKEN
+AGENT_EVAL_MCP_HEADERS
+```
+
+Strands 示例：
+
+```python
+import json
+import os
+
+from strands.tools.mcp import MCPClient
+
+gateway = MCPClient(
+    url=os.environ["AGENT_EVAL_MCP_URL"],
+    headers=json.loads(os.environ["AGENT_EVAL_MCP_HEADERS"]),
+)
+
+with gateway:
+    environment_tools = gateway.list_tools_sync()
+    agent = build_agent(extra_tools=environment_tools)
+    result = agent(instruction)
+```
+
+`build_agent(extra_tools=...)` 是建议接口，具体名称可以不同，但必须将 Gateway 返回的工具
+交给你自己的 Agent。评测框架不 import Strands。
 
 ### 8.2 准备 Baseline Variant
 
@@ -407,8 +447,8 @@ uv run command-agent-eval \
 
 ### 9.1 明确本节评测对象
 
-当前 `security-agent-qualification.toml` 默认使用课程提供的
-`NativeCliHarborAgent`/ReAct Variant，作用是验证：
+`security-agent-qualification.toml` 默认仍使用课程提供的
+`NativeCliHarborAgent`/ReAct Variant，作用是先验证：
 
 - 数据集名称和 Task selector；
 - Docker 环境；
@@ -416,8 +456,8 @@ uv run command-agent-eval \
 - Bedrock 权限；
 - 结果目录和汇总。
 
-除非讲师已经提供你的 Security Agent 对应 Harbor Adapter/Variant，否则本节分数不是你
-自研 Agent 的分数。
+默认命令的分数不是你自研 Agent 的分数。数据集链路通过后，使用 9.4 的 Generic Harbor
+命令评测你自己的 Variant。
 
 ### 9.2 Dry Run
 
@@ -474,6 +514,52 @@ uv run agent-engineering-eval \
 ```
 
 首次运行可能需要拉取镜像。不要因为终端暂时没有输出而重复启动相同任务。
+
+### 9.4 在 Harbor 中运行自研 Agent
+
+先选择单题：
+
+```bash
+uv run harbor run \
+  --dataset terminal-bench-sample@2.0 \
+  --include-task-name fix-code-vulnerability \
+  --agent evaluation.generic_harbor_adapter:GenericCommandHarborAgent \
+  --ak variant_path=/absolute/path/to/student-security-agent/baseline.toml \
+  --env docker \
+  --n-concurrent 1 \
+  --yes
+```
+
+运行链路：
+
+```text
+Harbor
+  → GenericCommandHarborAgent
+  → 启动每个 Trial 的 MCP Environment Gateway
+  → 启动 Variant 固定 commit 的 Agent
+  → Agent 自己的 MCP Client
+  → environment_exec
+  → Harbor BaseEnvironment.exec()
+  → Docker task environment
+  → Verifier
+```
+
+检查 Trial 的 `agent/` 目录：
+
+```text
+agent-result.json
+stdout.log
+stderr.log
+tool-calls.jsonl
+workspace/
+artifacts/
+```
+
+`tool-calls.jsonl` 是 Harness 观察到的环境工具调用。Agent 自报 Tool Call 数只能用于诊断，
+正式安全分析优先使用该 trace。
+
+如果 Agent 没有连接 MCP Gateway，它仍可能正常返回 final text，但无法读取或修改 Harbor
+任务环境，Verifier 通常会给出 reward 0。
 
 ## 10. Lab 4：读取结果与诊断
 
@@ -813,6 +899,16 @@ uv run python scripts/check_bedrock.py
 
 前者成功不能证明后者一定成功。
 
+同时确认 Descriptor 包含：
+
+```toml
+[environment]
+access = "mcp"
+tools = ["environment_exec"]
+```
+
+并确认 Agent shim 使用了 `AGENT_EVAL_MCP_URL` 和 `AGENT_EVAL_MCP_HEADERS`。
+
 ### 13.7 可以运行 AgentDojo、SEC-bench 或 BountyBench 吗
 
 本版不可以由学员直接运行。它们尚未完成当前课程 Adapter/Qualification。等待讲师将
@@ -824,6 +920,8 @@ catalog 状态改为 `ready` 并提供明确命令。
 - [ ] 能解释 Descriptor、Variant、Adapter 和 Verifier；
 - [ ] 自研 Agent 单次 command smoke 成功；
 - [ ] 两次 Attempt 没有状态串扰；
+- [ ] Agent 能通过 MCP Gateway 操作 Harbor Environment；
+- [ ] `tool-calls.jsonl` 记录了 Harness 观察到的工具调用；
 - [ ] Harbor Qualification dry-run 正确；
 - [ ] 三道 Calibration 题得到结果或已记录基础设施问题；
 - [ ] 每个失败至少有两条证据；

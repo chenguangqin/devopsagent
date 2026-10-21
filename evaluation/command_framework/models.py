@@ -14,6 +14,7 @@ SCHEMA_VERSION = "0.2"
 IDENTIFIER_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 PARAMETER_TYPES = {"string", "integer", "number", "boolean", "enum"}
 DELIVERY_TYPES = {"argv", "env"}
+ENVIRONMENT_ACCESS_TYPES = {"none", "mcp"}
 
 
 @dataclass(frozen=True)
@@ -32,6 +33,14 @@ class State:
     mode: str
     snapshot_paths: tuple[str, ...]
     empty_paths: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class EnvironmentAccess:
+    mode: str
+    tools: tuple[str, ...]
+    tool_timeout_seconds: int
+    max_output_chars: int
 
 
 @dataclass(frozen=True)
@@ -75,6 +84,7 @@ class AgentDescriptor:
     repository: Path
     source_revision: str
     launcher: Launcher
+    environment: EnvironmentAccess
     state: State
     artifact_paths: tuple[str, ...]
     capabilities: Mapping[str, Any]
@@ -166,6 +176,33 @@ def load_descriptor(path: Path) -> AgentDescriptor:
         ),
     )
 
+    environment_data = data.get("environment", {})
+    if not isinstance(environment_data, dict):
+        raise ValueError("[environment] must be a table")
+    environment_mode = environment_data.get("access", "none")
+    if environment_mode not in ENVIRONMENT_ACCESS_TYPES:
+        raise ValueError(f"unsupported environment access: {environment_mode!r}")
+    environment_tools = environment_data.get("tools", [])
+    if not isinstance(environment_tools, list) or not all(
+        isinstance(item, str) and IDENTIFIER_PATTERN.fullmatch(item)
+        for item in environment_tools
+    ):
+        raise ValueError("environment.tools must be an array of tool identifiers")
+    if environment_mode == "none" and environment_tools:
+        raise ValueError("environment.tools requires environment.access = 'mcp'")
+    environment_access = EnvironmentAccess(
+        mode=environment_mode,
+        tools=tuple(environment_tools),
+        tool_timeout_seconds=_positive_integer(
+            environment_data.get("tool_timeout_seconds", 120),
+            "environment.tool_timeout_seconds",
+        ),
+        max_output_chars=_positive_integer(
+            environment_data.get("max_output_chars", 16_000),
+            "environment.max_output_chars",
+        ),
+    )
+
     state_data = _require_table(data, "state")
     state_mode = state_data.get("mode")
     if state_mode != "isolated-copy":
@@ -197,6 +234,7 @@ def load_descriptor(path: Path) -> AgentDescriptor:
         repository=repository,
         source_revision=source_revision,
         launcher=launcher,
+        environment=environment_access,
         state=State(
             mode=state_mode,
             snapshot_paths=snapshot_paths,
