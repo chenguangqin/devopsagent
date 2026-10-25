@@ -1,0 +1,18 @@
+# Task set for evaluating the external my_strands_agent.
+# Dataset: terminal-bench-sample@2.0. Every name must exist in that dataset.
+# One task name per line; blank lines and lines starting with # are ignored.
+
+# Structured data processing and exact artifact generation
+log-summary-date-ranges
+
+# Compilation and build verification
+sqlite-with-gcov
+
+# Persistent service and system configuration
+configure-git-webserver
+
+# Repository diagnosis, security reasoning, and code repair
+fix-code-vulnerability
+
+# Cross-language implementation under unusual constraints
+polyglot-c-py

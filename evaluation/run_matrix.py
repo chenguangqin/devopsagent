@@ -10,11 +10,14 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Sequence
 
+from evaluation.command_framework.models import load_variant
+
 ADAPTERS = {
     "native": "evaluation.harbor_adapter:NativeCliHarborAgent",
     "langchain": "evaluation.harbor_adapter:LangChainCliHarborAgent",
     "strands": "evaluation.harbor_adapter:StrandsCliHarborAgent",
 }
+GENERIC_ADAPTER = "evaluation.generic_harbor_adapter:GenericCommandHarborAgent"
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -26,7 +29,17 @@ def build_parser() -> argparse.ArgumentParser:
         "--engines",
         nargs="+",
         choices=tuple(ADAPTERS),
-        default=list(ADAPTERS),
+        help="Built-in engines; defaults to all unless --variant is given.",
+    )
+    parser.add_argument(
+        "--variant",
+        type=Path,
+        action="append",
+        default=[],
+        help=(
+            "External agent Variant TOML run through the MCP gateway; repeat to "
+            "compare several. Its descriptor controls model, budget, and tool timeout."
+        ),
     )
     parser.add_argument("--model-id", default="global.anthropic.claude-haiku-4-5-20251001-v1:0")
     parser.add_argument("--region", default="us-west-2")
@@ -73,11 +86,36 @@ def main(argv: Sequence[str] | None = None) -> int:
     args.include_task = list(
         dict.fromkeys([*preset_tasks, *args.include_task])
     )
+    if args.engines is None:
+        args.engines = [] if args.variant else list(ADAPTERS)
     run_name = datetime.now().strftime("%Y-%m-%d__%H-%M-%S")
     run_dir = args.output_dir / run_name
     run_dir.mkdir(parents=True, exist_ok=False)
     summaries = []
 
+    for engine, command in build_jobs(args, run_dir):
+        print(f"\n=== {engine} ===", flush=True)
+        completed = subprocess.run(command, check=False)
+        result_path = run_dir / engine / "result.json"
+        summaries.append(summarize_result(engine, result_path, completed.returncode))
+
+    summary_path = run_dir / "matrix-summary.json"
+    summary_path.write_text(
+        json.dumps(summaries, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    print_summary(summaries)
+    print(f"\nResults: {run_dir}")
+    failed = any(
+        item["return_code"] != 0 or item["errors"] > 0 for item in summaries
+    )
+    return 1 if failed else 0
+
+
+def build_jobs(
+    args: argparse.Namespace, run_dir: Path
+) -> list[tuple[str, list[str]]]:
+    jobs = []
     for engine in args.engines:
         command = [
             "harbor",
@@ -100,14 +138,40 @@ def main(argv: Sequence[str] | None = None) -> int:
             f"tool_timeout_seconds={args.tool_timeout_seconds}",
             "--ak",
             f"max_tool_output_chars={args.max_tool_output_chars}",
-            "--n-attempts",
-            str(args.attempts),
-            "--n-concurrent",
-            str(args.n_concurrent),
-            "--env",
-            args.environment,
-            "--yes",
         ]
+        jobs.append((engine, command))
+    for variant_path in args.variant:
+        variant = load_variant(variant_path)
+        command = [
+            "harbor",
+            "run",
+            "--jobs-dir",
+            str(run_dir),
+            "--job-name",
+            variant.id,
+            "--agent",
+            GENERIC_ADAPTER,
+            "--ak",
+            f"variant_path={variant.path}",
+        ]
+        jobs.append((variant.id, command))
+
+    names = [name for name, _ in jobs]
+    duplicates = sorted({name for name in names if names.count(name) > 1})
+    if duplicates:
+        raise ValueError(f"duplicate job names: {', '.join(duplicates)}")
+    for _, command in jobs:
+        command.extend(
+            [
+                "--n-attempts",
+                str(args.attempts),
+                "--n-concurrent",
+                str(args.n_concurrent),
+                "--env",
+                args.environment,
+                "--yes",
+            ]
+        )
         if args.path:
             command.extend(["--path", str(args.path)])
         else:
@@ -116,23 +180,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             command.extend(["--include-task-name", task_name])
         for task_name in args.exclude_task:
             command.extend(["--exclude-task-name", task_name])
-
-        print(f"\n=== {engine} ===", flush=True)
-        completed = subprocess.run(command, check=False)
-        result_path = run_dir / engine / "result.json"
-        summaries.append(summarize_result(engine, result_path, completed.returncode))
-
-    summary_path = run_dir / "matrix-summary.json"
-    summary_path.write_text(
-        json.dumps(summaries, indent=2, ensure_ascii=False),
-        encoding="utf-8",
-    )
-    print_summary(summaries)
-    print(f"\nResults: {run_dir}")
-    failed = any(
-        item["return_code"] != 0 or item["errors"] > 0 for item in summaries
-    )
-    return 1 if failed else 0
+    return jobs
 
 
 def load_preset(path: Path) -> list[str]:
@@ -207,7 +255,7 @@ def _reward_values(evals: dict[str, Any]) -> list[float]:
 def print_summary(summaries: list[dict[str, Any]]) -> None:
     print("\n=== comparison ===")
     print(
-        f"{'engine':<12} {'mean':>8} {'score':>8} {'full':>8} "
+        f"{'engine':<24} {'mean':>8} {'score':>8} {'full':>8} "
         f"{'trials':>8} {'errors':>8} {'tokens':>12}"
     )
     for item in summaries:
@@ -221,7 +269,7 @@ def print_summary(summaries: list[dict[str, Any]]) -> None:
             else str(sum(int(value) for value in token_values))
         )
         print(
-            f"{item['engine']:<12} {mean:>8} {score:>8} {full:>8} "
+            f"{item['engine']:<24} {mean:>8} {score:>8} {full:>8} "
             f"{item['trials']:>8} {item['errors']:>8} {tokens:>12}"
         )
 

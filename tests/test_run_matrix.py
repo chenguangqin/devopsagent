@@ -1,7 +1,18 @@
 import json
 from pathlib import Path
 
-from evaluation.run_matrix import build_parser, load_preset, summarize_result
+from evaluation.run_matrix import (
+    GENERIC_ADAPTER,
+    build_jobs,
+    build_parser,
+    load_preset,
+    summarize_result,
+)
+
+FIXTURE_VARIANT = (
+    Path(__file__).parents[1]
+    / "evaluation/fixtures/agents/deterministic-agent/baseline.toml"
+)
 
 
 def test_summarize_result_computes_mean_from_reward_stats(tmp_path: Path):
@@ -81,3 +92,44 @@ def test_matrix_parser_accepts_multiple_presets():
     )
 
     assert args.preset == [Path("public.txt"), Path("/secure/hidden.txt")]
+
+
+def test_variant_only_runs_generic_adapter_with_shared_filters(tmp_path: Path):
+    args = build_parser().parse_args(
+        [
+            "--dataset",
+            "terminal-bench-sample@2.0",
+            "--variant",
+            str(FIXTURE_VARIANT),
+            "--include-task",
+            "fix-git",
+        ]
+    )
+    args.engines = []
+
+    jobs = build_jobs(args, tmp_path)
+
+    assert [name for name, _ in jobs] == ["deterministic-baseline"]
+    command = jobs[0][1]
+    assert command[command.index("--agent") + 1] == GENERIC_ADAPTER
+    assert f"variant_path={FIXTURE_VARIANT.resolve()}" in command
+    assert "--model" not in command
+    assert command[-2:] == ["--include-task-name", "fix-git"]
+
+
+def test_engines_and_variants_run_side_by_side(tmp_path: Path):
+    args = build_parser().parse_args(
+        [
+            "--path",
+            "tasks",
+            "--engines",
+            "native",
+            "--variant",
+            str(FIXTURE_VARIANT),
+        ]
+    )
+
+    jobs = build_jobs(args, tmp_path)
+
+    assert [name for name, _ in jobs] == ["native", "deterministic-baseline"]
+    assert all(command[-2:] == ["--path", "tasks"] for _, command in jobs)
