@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
+
+import pytest
 
 from harbor.models.agent.context import AgentContext
 from harbor.models.task.config import EnvironmentConfig
@@ -31,7 +34,10 @@ def make_external_agent(tmp_path: Path) -> Path:
 import asyncio
 import json
 import os
+import os
 from pathlib import Path
+
+import pytest
 
 import httpx2
 from mcp.client.session import ClientSession
@@ -170,10 +176,17 @@ async def test_external_command_agent_operates_harbor_environment_via_mcp(
     assert metadata["environment_tools"] == ["environment_exec"]
 
 
-def test_harbor_runs_external_command_agent_through_mcp_gateway(tmp_path: Path):
+@pytest.mark.parametrize("relative_jobs_dir", [False, True])
+def test_harbor_runs_external_command_agent_through_mcp_gateway(
+    tmp_path: Path, relative_jobs_dir: bool
+):
     variant_path = make_external_agent(tmp_path)
     harbor = Path(sys.executable).with_name("harbor")
+    repository_root = Path(__file__).parents[1]
     jobs_dir = tmp_path / "jobs"
+    jobs_dir_argument = (
+        os.path.relpath(jobs_dir, repository_root) if relative_jobs_dir else str(jobs_dir)
+    )
 
     completed = subprocess.run(
         [
@@ -188,12 +201,12 @@ def test_harbor_runs_external_command_agent_through_mcp_gateway(tmp_path: Path):
             "--env",
             "evaluation.host_environment:TrustedHostEnvironment",
             "--jobs-dir",
-            str(jobs_dir),
+            jobs_dir_argument,
             "--n-concurrent",
             "1",
             "--yes",
         ],
-        cwd=Path(__file__).parents[1],
+        cwd=repository_root,
         check=False,
         capture_output=True,
         text=True,

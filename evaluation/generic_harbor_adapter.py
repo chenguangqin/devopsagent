@@ -56,6 +56,9 @@ class GenericCommandHarborAgent(BaseAgent):
         trial_paths: TrialPaths | None = None,
         **kwargs: Any,
     ) -> None:
+        # Harbor passes paths relative to its --jobs-dir; the external agent runs
+        # with cwd=workspace, so every path handed to it must be absolute.
+        logs_dir = logs_dir.resolve()
         super().__init__(logs_dir=logs_dir, **kwargs)
         self.trial_paths = trial_paths or TrialPaths(logs_dir.parent)
         self.variant: Variant | None = None
